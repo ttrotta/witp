@@ -1,6 +1,6 @@
 export default function Home() {
   return (
-    <main className="w-screen h-screen flex items-center justify-center bg-black text-white text-8xl">
+    <main className="flex h-screen w-screen items-center justify-center bg-black text-8xl text-white">
       WITP
     </main>
   );
