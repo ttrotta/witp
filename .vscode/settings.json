@@ -27,6 +27,7 @@
     "**/tsconfig.json": true,
     "**/postcss.config.mjs": true,
     "**/tailwind.config.ts": true,
+    "**/prisma.config.ts": true,
 
     ".next": true
   }
