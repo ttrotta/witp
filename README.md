@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# What is This Pain? 🦴
 
-## Getting Started
+> **🚧 Status: In Active Development** > This project is currently in its early development stages. Core architecture, database models, and module structures are being actively established.
 
-First, run the development server:
+## 📖 About the Project
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+**What is This Pain?** is an interactive, 3D-driven web application designed to help users identify physical discomforts, log their pain history, and receive intelligent insights.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Instead of traditional forms, users interact with a 3D anatomical model to pinpoint their pain. The platform also fosters a community where users can share their experiences, comment on specific conditions, and track their rehabilitation journey through a personal blog.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🏗️ Architecture & Project Structure
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project follows a **Screaming Architecture** approach, heavily inspired by Domain-Driven Design (DDD) and Feature-Sliced Design. The goal is to ensure the codebase is highly scalable, maintainable, and explicitly communicates its business logic.
 
-## Learn More
+The repository is organized into distinct layers:
 
-To learn more about Next.js, take a look at the following resources:
+- **`app/` (Routing & Views):** Handles the Next.js App Router logic, pages, and internationalization (`[lang]`). It remains completely agnostic of the business logic.
+- **`modules/` (Business Domains):** The heart of the application. Features are grouped by domain rather than file type.
+  - `anatomy-3d/`: Renders the interactive 3D canvas (React Three Fiber) and camera animations (GSAP).
+  - `pain-tracking/`: Manages pain logs and connects with domain-specific AI agents.
+  - `community/`: Handles the social network aspect (posts, nested comments, likes).
+  - `auth/` & `user-profile/`: Manages user sessions, settings, and personal blogs.
+- **`ai/` (Intelligence Layer):** Contains the shared AI configurations and the Model Context Protocol (MCP) integrations to power our intelligent agents.
+- **`infrastructure/` (Technical Adapters):** Isolates external dependencies like the Prisma database client, Supabase configurations, and environment variable validation.
+- **`shared/` (Core Utilities):** Dumb UI components, global Zustand stores, and shared TypeScript types.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 💻 Tech Stack Highlights
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Framework:** Next.js (App Router)
+- **3D & Animations:** React Three Fiber, GSAP
+- **Database & ORM:** PostgreSQL (Supabase), Prisma
+- **State Management:** Zustand
+- **Validation:** Zod
