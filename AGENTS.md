@@ -27,30 +27,28 @@ Use these skills for detailed patterns on-demand when assisting with this reposi
 
 ### Data, Validation & AI
 
-| Skill                              | Description                                          | Path                                                       |
-| ---------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
-| `prisma-database-setup`            | Prisma v7 setup, client, migrations, driver adapters | `.agents/skills/prisma-database-setup/SKILL.md`            |
-| `supabase-postgres-best-practices` | Postgres optimization, RLS, indexes                  | `.agents/skills/supabase-postgres-best-practices/SKILL.md` |
-| `zod-4`                            | Zod v4 new API (z.email(), z.uuid())                 | `.agents/skills/zod-4/SKILL.md`                            |
-| `skill-creator`                    | Create new AI agent skills for this repository       | `.agents/skills/skill-creator/SKILL.md`                    |
+| Skill                   | Description                                          | Path                                            |
+| ----------------------- | ---------------------------------------------------- | ----------------------------------------------- |
+| `prisma-database-setup` | Prisma v7 setup, client, migrations, driver adapters | `.agents/skills/prisma-database-setup/SKILL.md` |
+| `zod-4`                 | Zod v4 new API (z.email(), z.uuid())                 | `.agents/skills/zod-4/SKILL.md`                 |
+| `skill-creator`         | Create new AI agent skills for this repository       | `.agents/skills/skill-creator/SKILL.md`         |
 
 ## Auto-invoke Skills
 
 When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 
-| Action                                                    | Skill                              |
-| --------------------------------------------------------- | ---------------------------------- |
-| Creating or modifying files in `app/`                     | `vercel-react-best-practices`      |
-| Writing React 19 components (.tsx)                        | `react-19`                         |
-| Creating UI components or styling with Tailwind CSS       | `tailwind-design-system`           |
-| Working with advanced TypeScript patterns                 | `typescript-advanced-types`        |
-| Importing across layers (e.g., from `modules/` to `app/`) | `screaming-architecture`           |
-| Working with Prisma (schema, migrations, client)          | `prisma-database-setup`            |
-| Working with PostgreSQL (indexes, RLS, optimization)      | `supabase-postgres-best-practices` |
-| Working with Zod schemas (new API)                        | `zod-4`                            |
-| Working with Zustand state management                     | `zustand-5`                        |
-| Modifying the 3D model, lighting, or mesh interaction     | `r3f-best-practices`               |
-| Creating new rules or skills for the AI assistant         | `skill-creator`                    |
+| Action                                                    | Skill                         |
+| --------------------------------------------------------- | ----------------------------- |
+| Creating or modifying files in `app/`                     | `vercel-react-best-practices` |
+| Writing React 19 components (.tsx)                        | `react-19`                    |
+| Creating UI components or styling with Tailwind CSS       | `tailwind-design-system`      |
+| Working with advanced TypeScript patterns                 | `typescript-advanced-types`   |
+| Importing across layers (e.g., from `modules/` to `app/`) | `screaming-architecture`      |
+| Working with Prisma (schema, migrations, client)          | `prisma-database-setup`       |
+| Working with Zod schemas (new API)                        | `zod-4`                       |
+| Working with Zustand state management                     | `zustand-5`                   |
+| Modifying the 3D model, lighting, or mesh interaction     | `r3f-best-practices`          |
+| Creating new rules or skills for the AI assistant         | `skill-creator`               |
 
 ## Tech Stack
 
@@ -58,7 +56,7 @@ When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 - **Language**: TypeScript
 - **UI**: React 19, Tailwind CSS 4 (via `shared/ui`)
 - **3D Engine**: React Three Fiber (Three.js), GSAP
-- **Database**: PostgreSQL (Supabase) with Prisma ORM
+- **Database**: PostgreSQL with Prisma ORM
 - **State & Validation**: Zustand, Zod
 
 ## Commands
@@ -66,7 +64,7 @@ When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 - `pnpm dev` - Start development server
 - `pnpm build` - Build for production
 - `pnpm lint` - Run ESLint
-- `npx prisma migrate dev` - Apply schema changes to Supabase (uses `DIRECT_URL`)
+- `npx prisma migrate dev` - Apply schema changes to database (uses `DIRECT_URL`)
 - `npx prisma generate` - Update Prisma Client types
 - `npx prisma studio` - Open local database UI
 
