@@ -87,6 +87,26 @@ function Theme({ showTheme }) {
 }
 ```
 
+## Context Provider (No .Provider) — _Custom addition, not from prowler-cloud_
+
+```typescript
+// ✅ React 19: Use Context directly as JSX element
+const ThemeContext = createContext<Theme | null>(null);
+
+function ThemeProvider({ children }: { children: React.ReactNode }) {
+  return (
+    <ThemeContext value={{ primary: "blue" }}>
+      {children}
+    </ThemeContext>
+  );
+}
+
+// ❌ Old way (unnecessary now)
+<ThemeContext.Provider value={{ primary: "blue" }}>
+  {children}
+</ThemeContext.Provider>
+```
+
 ## Actions & useActionState
 
 ```typescript

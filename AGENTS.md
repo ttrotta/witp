@@ -1,9 +1,5 @@
 # Repository Guidelines
 
-## Project Overview
-
-**What is This Pain? (WITP)** is a highly modular, 3D-interactive web application for tracking physical pain and community sharing. It follows a strict **Screaming Architecture**, separating routing, business domains, AI integrations, and infrastructure.
-
 ## Available Skills
 
 Use these skills for detailed patterns on-demand when assisting with this repository:
@@ -50,23 +46,15 @@ When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 | Modifying the 3D model, lighting, or mesh interaction     | `r3f-best-practices`          |
 | Creating new rules or skills for the AI assistant         | `skill-creator`               |
 
-## Tech Stack
+## Sub-agents
 
-- **Framework**: Next.js (App Router)
-- **Language**: TypeScript
-- **UI**: React 19, Tailwind CSS 4 (via `shared/ui`)
-- **3D Engine**: React Three Fiber (Three.js), GSAP
-- **Database**: PostgreSQL with Prisma ORM
-- **State & Validation**: Zustand, Zod
+Each component has its own AGENTS.md with specific guidelines:
 
-## Commands
-
-- `pnpm dev` - Start development server
-- `pnpm build` - Build for production
-- `pnpm lint` - Run ESLint
-- `npx prisma migrate dev` - Apply schema changes to database (uses `DIRECT_URL`)
-- `npx prisma generate` - Update Prisma Client types
-- `npx prisma studio` - Open local database UI
+| Component          | Location                       | Description                                    |
+| ------------------ | ------------------------------ | ---------------------------------------------- |
+| **UI**             | `src/ui/AGENTS.md`             | Next.js App Router, React components, Tailwind |
+| **Modules**        | `src/modules/AGENTS.md`        | Domain logic, Server Actions, Zod schemas      |
+| **Infrastructure** | `src/infrastructure/AGENTS.md` | Prisma, i18n, configuration                    |
 
 ## Commit Guidelines
 
