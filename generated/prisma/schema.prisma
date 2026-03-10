@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  USER
+  ADMIN
+  MEDICAL_EXPERT
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model User {
+  id             String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username       String     @unique
+  name           String?
+  surname        String?
+  email          String     @unique
+  passwordHash   String
+  profilePicture String?
+  role           Role       @default(USER)
+  status         UserStatus @default(ACTIVE)
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  profile  UserProfile?
+  settings UserSettings?
+
+  followers Follows[] @relation("UserFollowers")
+  following Follows[] @relation("UserFollowing")
+
+  painRecords PainRecord[]
+  posts       Post[]
+  comments    Comment[]
+  likes       Like[]
+  blogEntries BlogEntry[]
+}
+
+model UserProfile {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  description String?   @db.Text
+  location    String?
+  website     String?
+  birthDate   DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @db.Uuid
+}
+
+model UserSettings {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  theme    String  @default("system")
+  language String  @default("es")
+  country  String?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @unique @db.Uuid
+}
+
+model Follows {
+  follower   User   @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  followerId String @db.Uuid
+
+  following   User   @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+  followingId String @db.Uuid
+
+  createdAt DateTime @default(now())
+
+  @@id([followerId, followingId])
+}
+
+model BodyPart {
+  id          String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  meshId      String  @unique
+  description String?
+
+  painRecords PainRecord[]
+  posts       Post[]
+  conditions  ConditionBodyPart[]
+}
+
+model Condition {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name           String
+  description    String   @db.Text
+  recommendation String   @db.Text
+  severity       Severity
+
+  bodyParts ConditionBodyPart[]
+}
+
+model ConditionBodyPart {
+  condition   Condition @relation(fields: [conditionId], references: [id], onDelete: Cascade)
+  conditionId String    @db.Uuid
+  bodyPart    BodyPart  @relation(fields: [bodyPartId], references: [id], onDelete: Cascade)
+  bodyPartId  String    @db.Uuid
+
+  @@id([conditionId, bodyPartId])
+}
+
+model PainRecord {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  intensity Int /// Valid range: 1-10. 
+  notes     String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String   @db.Uuid
+  bodyPart   BodyPart @relation(fields: [bodyPartId], references: [id], onDelete: Cascade)
+  bodyPartId String   @db.Uuid
+
+  @@index([userId])
+  @@index([bodyPartId])
+}
+
+model Post {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title     String
+  content   String   @db.Text
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String   @db.Uuid
+  bodyPart   BodyPart @relation(fields: [bodyPartId], references: [id], onDelete: Cascade)
+  bodyPartId String   @db.Uuid
+
+  comments Comment[]
+  likes    Like[]
+
+  @@index([userId])
+  @@index([bodyPartId])
+}
+
+model Comment {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String @db.Uuid
+
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  parentId String?   @db.Uuid
+  replies  Comment[] @relation("CommentReplies")
+
+  likes Like[]
+
+  @@index([postId])
+  @@index([userId])
+}
+
+model Like {
+  id String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+
+  post   Post?   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String? @db.Uuid
+
+  comment   Comment? @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String?  @db.Uuid
+
+  @@unique([userId, postId])
+  @@unique([userId, commentId])
+}
+
+model BlogEntry {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title     String
+  content   String   @db.Text
+  isPublic  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @db.Uuid
+
+  tags BlogEntryTag[]
+}
+
+model BlogEntryTag {
+  blogEntry   BlogEntry @relation(fields: [blogEntryId], references: [id], onDelete: Cascade)
+  blogEntryId String    @db.Uuid
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId       String    @db.Uuid
+
+  @@id([blogEntryId, tagId])
+}
+
+model Tag {
+  id   String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name String @unique
+
+  blogEntries BlogEntryTag[]
+}
