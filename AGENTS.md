@@ -1,5 +1,15 @@
 # Repository Guidelines
 
+## Setup
+
+To enable AI agent skills for this project, run:
+
+```bash
+./skills/setup.sh --all
+```
+
+This creates symlinks from `.agents/skills`, `.agent/skills`, etc. to the skills directory.
+
 ## Available Skills
 
 Use these skills for detailed patterns on-demand when assisting with this repository:

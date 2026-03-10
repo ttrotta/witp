@@ -31,3 +31,20 @@ The repository is organized into distinct layers:
 - **Database & ORM:** PostgreSQL (Supabase), Prisma
 - **State Management:** Zustand
 - **Validation:** Zod
+
+## 🤖 AI Agent Skills
+
+This project includes specialized skills to guide AI agents in following best practices specific to this codebase. To enable these skills for your AI assistant:
+
+```bash
+# Run from the project root
+./skills/setup.sh --all
+```
+
+This creates symlinks so your AI agent can access the skills. You can also target specific agents:
+
+```bash
+./skills/setup.sh --claude    # For Claude
+./skills/setup.sh --gemini    # For Gemini
+./skills/setup.sh --codex    # For Codex
+```
