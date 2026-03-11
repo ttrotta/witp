@@ -42,9 +42,9 @@ yarn-error.log*
 next-env.d.ts
 
 # AI assistants
-.agent/
-.agents/
-.claude/
-.gemini/
-.codex/
-skills/
+.agent/**
+.agents/**
+.claude/**
+.gemini/**
+.codex/**
+
