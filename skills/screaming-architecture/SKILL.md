@@ -50,6 +50,8 @@ Server Actions must live within their respective domain.
 
 ## Code Generation Instructions
 
+> **🔴 IMPORTANTE**: Los componentes de dominio van en `modules/[domain]/components/`, NO en `app/`. Los únicos componentes en `app/` deben ser páginas, layouts, y componentes de presentación muy específicos de esa ruta.
+
 When asked to create a new feature:
 
 1. Identify the domain (Does it belong to `community`, `anatomy-3d`, `auth`, etc.?).
