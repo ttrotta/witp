@@ -4,5 +4,13 @@
   "save": "Save",
   "cancel": "Cancel",
   "error": "Something went wrong",
-  "notFound": "Page not found"
+  "notFound": "Page not found",
+  "notifyMe": {
+    "title": "Coming Soon",
+    "description": "Be the first to know when we launch",
+    "placeholder": "Enter your email",
+    "button": "Notify Me",
+    "success": "You're on the list!",
+    "error": "Something went wrong"
+  }
 }

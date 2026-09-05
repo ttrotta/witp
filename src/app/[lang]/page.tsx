@@ -1,5 +1,6 @@
-import { getDictionary, hasLocale, type Locale } from "@/infrastructure/i18n";
+import { hasLocale } from "@/infrastructure/i18n";
 import { notFound } from "next/navigation";
+import { NotifySection } from "@/modules/waitlist/components/NotifySection";
 
 export default async function Home({
   params,
@@ -10,11 +11,9 @@ export default async function Home({
 
   if (!hasLocale(lang)) notFound();
 
-  const dict = await getDictionary(lang as Locale);
-
   return (
-    <main className="flex h-screen w-screen items-center justify-center bg-black text-8xl text-white">
-      {dict.common.appName}
+    <main className="flex h-screen w-screen items-center justify-center bg-black">
+      <NotifySection />
     </main>
   );
 }

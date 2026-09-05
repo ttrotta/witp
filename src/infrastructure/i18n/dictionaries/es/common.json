@@ -4,5 +4,13 @@
   "save": "Guardar",
   "cancel": "Cancelar",
   "error": "Algo salió mal",
-  "notFound": "Página no encontrada"
+  "notFound": "Página no encontrada",
+  "notifyMe": {
+    "title": "Próximamente",
+    "description": "Sé el primero en saber cuando lancemos",
+    "placeholder": "Ingresa tu email",
+    "button": "Avísame",
+    "success": "¡Estás en la lista!",
+    "error": "Algo salió mal"
+  }
 }
