@@ -20,6 +20,9 @@
 # production
 /build
 
+# Prisma generated client
+/generated/prisma/
+
 # misc
 .DS_Store
 *.pem
@@ -42,6 +45,7 @@ yarn-error.log*
 next-env.d.ts
 
 # AI assistants
+.atl/
 .agent/**
 .agents/**
 .claude/**
