@@ -4,5 +4,15 @@
   "blog": "Blog",
   "profile": "Perfil",
   "login": "Iniciar Sesión",
-  "register": "Registrarse"
+  "register": "Registrarse",
+  "features": "Funciones",
+  "pain": "Registro de dolor",
+  "community": "Comunidad",
+  "faq": "FAQ",
+  "menu": "Abrir navegación",
+  "closeMenu": "Cerrar navegación",
+  "navigation": "Navegación principal",
+  "skip": "Ir al mapa corporal",
+  "language": "Switch to English",
+  "signOut": "Cerrar sesión"
 }

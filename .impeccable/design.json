@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-19T05:42:00Z",
+  "title": "Design System: witp",
+  "extensions": {
+    "colorMeta": {
+      "accent": { "role": "primary", "displayName": "Mint", "tonalRamp": ["oklch(from #a1efd4 15% c h)", "oklch(from #a1efd4 26% c h)", "oklch(from #a1efd4 38% c h)", "oklch(from #a1efd4 49% c h)", "oklch(from #a1efd4 61% c h)", "oklch(from #a1efd4 72% c h)", "oklch(from #a1efd4 84% c h)", "oklch(from #a1efd4 95% c h)"] },
+      "background": { "role": "neutral", "displayName": "Deep blue-green", "tonalRamp": ["oklch(from #0e2025 15% c h)", "oklch(from #0e2025 26% c h)", "oklch(from #0e2025 38% c h)", "oklch(from #0e2025 49% c h)", "oklch(from #0e2025 61% c h)", "oklch(from #0e2025 72% c h)", "oklch(from #0e2025 84% c h)", "oklch(from #0e2025 95% c h)"] },
+      "foreground": { "role": "neutral", "displayName": "Pale foreground", "tonalRamp": ["oklch(from #edf4f2 15% c h)", "oklch(from #edf4f2 26% c h)", "oklch(from #edf4f2 38% c h)", "oklch(from #edf4f2 49% c h)", "oklch(from #edf4f2 61% c h)", "oklch(from #edf4f2 72% c h)", "oklch(from #edf4f2 84% c h)", "oklch(from #edf4f2 95% c h)"] },
+      "muted": { "role": "neutral", "displayName": "Muted supporting text", "tonalRamp": ["oklch(from #acbfbe 15% c h)", "oklch(from #acbfbe 26% c h)", "oklch(from #acbfbe 38% c h)", "oklch(from #acbfbe 49% c h)", "oklch(from #acbfbe 61% c h)", "oklch(from #acbfbe 72% c h)", "oklch(from #acbfbe 84% c h)", "oklch(from #acbfbe 95% c h)"] },
+      "error": { "role": "error", "displayName": "Warm alert", "tonalRamp": ["oklch(from #ffb7ac 15% c h)", "oklch(from #ffb7ac 26% c h)", "oklch(from #ffb7ac 38% c h)", "oklch(from #ffb7ac 49% c h)", "oklch(from #ffb7ac 61% c h)", "oklch(from #ffb7ac 72% c h)", "oklch(from #ffb7ac 84% c h)", "oklch(from #ffb7ac 95% c h)"] }
+    },
+    "shadows": [{ "name": "navigation", "value": "0 25px 50px -12px rgb(0 0 0 / 25%)", "purpose": "Ambient depth beneath the floating navigation." }],
+    "motion": [
+      { "name": "journal-reveal", "value": "300ms cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "Opacity 0.6 to 1 and translateY 8px to 0 on region selection; suppressed with reduced motion." },
+      { "name": "journal-background", "value": "250ms ease-out", "purpose": "Journal background-color transition." }
+    ],
+    "breakpoints": [{ "name": "sm", "value": "640px" }, { "name": "lg", "value": "1024px" }, { "name": "wide-workspace", "value": "1400px" }]
+  },
+  "components": [
+    {
+      "name": "Primary action", "kind": "button", "refersTo": "button-primary",
+      "description": "Mint save and retry action.",
+      "html": "<button class=\"ds-primary\" type=\"button\">Save entry</button>",
+      "css": ".ds-primary{display:flex;align-items:center;justify-content:center;gap:.5rem;min-height:44px;padding:12px 20px;border:0;border-radius:9999px;background:var(--color-accent,#a1efd4);color:var(--color-background,#0e2025);font:600 14px/20px var(--font-sans,Geist,sans-serif);cursor:pointer;transition:background-color 150ms}.ds-primary:hover{background:white}.ds-primary:focus-visible{outline:2px solid var(--color-accent,#a1efd4);outline-offset:4px}.ds-primary:disabled{opacity:.6;cursor:not-allowed}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}"
+    },
+    {
+      "name": "Icon action", "kind": "button", "refersTo": "button-icon",
+      "description": "Circular reset control used by the model toolbar.",
+      "html": "<button class=\"ds-icon\" type=\"button\" aria-label=\"Reset view\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 11a9 9 0 1 1 9 9 9.75 9.75 0 0 1-6.74-2.74L3 15\"/><path d=\"M3 3v8h8\"/></svg></button>",
+      "css": ".ds-icon{display:flex;align-items:center;justify-content:center;width:40px;height:40px;padding:0;border:0;border-radius:9999px;background:transparent;color:var(--color-muted,#acbfbe);cursor:pointer;transition:color 150ms,background-color 150ms}.ds-icon:hover{background:rgb(255 255 255 / 10%);color:white}.ds-icon:focus-visible{outline:2px solid var(--color-accent,#a1efd4);outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-icon{transition:none}}"
+    },
+    {
+      "name": "Journal field", "kind": "input", "refersTo": "field",
+      "description": "Visible label and translucent field treatment.",
+      "html": "<label class=\"ds-label\" for=\"ds-notes\">Notes</label><textarea class=\"ds-field\" id=\"ds-notes\" rows=\"3\" placeholder=\"Describe the sensation\"></textarea>",
+      "css": ".ds-label{display:block;margin-bottom:8px;color:var(--color-foreground,#edf4f2);font:500 12px/16px var(--font-sans,Geist,sans-serif)}.ds-field{display:block;min-height:44px;width:calc(100% - 26px);padding:10px 12px;border:1px solid rgb(255 255 255 / 20%);border-radius:8px;background:rgb(0 0 0 / 15%);color:var(--color-foreground,#edf4f2);caret-color:var(--color-accent,#a1efd4);font:14px/20px var(--font-sans,Geist,sans-serif);resize:vertical}.ds-field::placeholder{color:var(--color-muted,#acbfbe)}.ds-field:focus-visible{outline:2px solid var(--color-accent,#a1efd4);outline-offset:4px}"
+    },
+    {
+      "name": "Glass journal", "kind": "card", "refersTo": "glass-panel",
+      "description": "Frosted contextual panel with a plain region heading.",
+      "html": "<section class=\"ds-panel\"><h2 class=\"ds-title\">Left shoulder</h2><p class=\"ds-copy\">Pain intensity</p></section>",
+      "css": ".ds-panel{padding:24px;border:1px solid rgb(255 255 255 / 15%);border-radius:16px;background:rgb(255 255 255 / 5%);backdrop-filter:blur(24px);color:var(--color-foreground,#edf4f2);font-family:var(--font-sans,Geist,sans-serif)}.ds-title{margin:0;font-size:24px;line-height:32px;font-weight:500;letter-spacing:-.025em}.ds-copy{margin:24px 0 0;font-size:12px;line-height:16px;font-weight:500}@media(min-width:640px){.ds-panel{padding:28px}}"
+    },
+    {
+      "name": "Capsule navigation", "kind": "nav", "refersTo": "capsule-nav",
+      "description": "Representative brand and desktop links inside the floating glass capsule.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Navigation preview\"><a class=\"ds-brand\" href=\"#\">witp<span class=\"ds-dot\">.</span></a><a class=\"ds-link\" href=\"#body-map\">Home</a><a class=\"ds-link\" href=\"#journal\">Pain log</a></nav>",
+      "css": ".ds-nav{display:flex;align-items:center;gap:16px;padding:12px 20px;border:1px solid rgb(255 255 255 / 20%);border-radius:9999px;background:rgb(255 255 255 / 10%);backdrop-filter:blur(24px);box-shadow:0 25px 50px -12px rgb(0 0 0 / 25%);font-family:var(--font-sans,Geist,sans-serif)}.ds-brand{margin-right:auto;color:var(--color-foreground,#edf4f2);font-size:24px;line-height:32px;font-weight:600;letter-spacing:-.025em;text-decoration:none}.ds-dot{color:var(--color-accent,#a1efd4)}.ds-link{padding:8px 12px;border-radius:9999px;color:var(--color-muted,#acbfbe);font-size:14px;line-height:20px;text-decoration:none;transition:color 150ms,background-color 150ms}.ds-link:hover{background:rgb(255 255 255 / 10%);color:white}.ds-nav a:focus-visible{outline:2px solid var(--color-accent,#a1efd4);outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-link{transition:none}}"
+    },
+    {
+      "name": "Front/back toggle", "kind": "chip", "refersTo": "view-toggle",
+      "description": "Pressed-state capsule from the anatomy toolbar.",
+      "html": "<div class=\"ds-views\" role=\"group\" aria-label=\"View preview\"><button class=\"ds-view\" type=\"button\" aria-pressed=\"true\">Front</button><button class=\"ds-view\" type=\"button\" aria-pressed=\"false\">Back</button></div>",
+      "css": ".ds-views{display:flex;gap:4px}.ds-view{min-height:40px;padding:0 12px;border:0;border-radius:9999px;background:transparent;color:var(--color-muted,#acbfbe);font:500 12px/16px var(--font-sans,Geist,sans-serif);cursor:pointer;transition:color 150ms,background-color 150ms}.ds-view[aria-pressed=true]{background:rgb(255 255 255 / 15%);color:white}.ds-view:hover{color:white}.ds-view:focus-visible{outline:2px solid var(--color-accent,#a1efd4);outline-offset:4px}@media(prefers-reduced-motion:reduce){.ds-view{transition:none}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Glass cockpit",
+    "overview": "Deep blue-green ground, frosted controls, a porcelain body model, and mint selection define the implemented interface. Geist typography and restrained borders keep the workspace legible around the interactive anatomy.",
+    "keyCharacteristics": ["Frosted panels and capsule navigation.", "Mint actions and selection against a dark ground.", "A directly interactive 3D body with contextual journal controls."],
+    "rules": [],
+    "dos": ["Do reuse the existing glass, field, primary-button, and icon-button styles.", "Do retain keyboard focus, native form controls, and reduced-motion behavior."],
+    "donts": ["Don't replace the interactive body with a raster mockup.", "Don't introduce another palette or opaque treatment for the established glass controls."]
+  }
+}
