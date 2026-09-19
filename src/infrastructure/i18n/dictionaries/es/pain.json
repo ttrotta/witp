@@ -1,0 +1,31 @@
+{
+  "title": "Tu registro de dolor",
+  "emptyTitle": "¿Dónde te duele?",
+  "emptyDescription": "Selecciona una zona del cuerpo. Te ayudamos a registrar lo que sientes, un detalle a la vez.",
+  "stepSelect": "Localiza la zona",
+  "stepDescribe": "Describe lo que sientes",
+  "stepSave": "Guarda tu registro personal",
+  "intensity": "¿Qué intensidad tiene el dolor?",
+  "mild": "Leve",
+  "moderate": "Moderado",
+  "severe": "Intenso",
+  "notes": "¿Cómo lo sientes?",
+  "optional": "Opcional",
+  "notesPlaceholder": "Una molestia constante, una punzada, cuándo empezó…",
+  "date": "¿Cuándo lo sentiste?",
+  "save": "Guardar registro",
+  "saving": "Guardando…",
+  "saved": "Entrada guardada en tu historial.",
+  "close": "Cerrar formulario de dolor",
+  "history": "Registros recientes",
+  "historyEmpty": "Tu historia empieza aquí. Las entradas que guardes aparecerán en tu historial.",
+  "historyLimit": "Tus 20 entradas más recientes",
+  "privacy": "Tus registros están vinculados a tu cuenta.",
+  "loginPrompt": "Inicia sesión para guardar. Tu borrador se mantiene aquí.",
+  "errors": {
+    "invalid": "Revisa la zona, la intensidad (1–10), la fecha y las notas (hasta 2.000 caracteres).",
+    "unauthorized": "Tu sesión ha caducado. Vuelve a iniciar sesión para guardar esta entrada.",
+    "missingRegion": "Esta zona aún no está disponible para registrar. Inténtalo más tarde.",
+    "connection": "No pudimos conectar con tu historial. Tu borrador sigue aquí; vuelve a intentarlo."
+  }
+}

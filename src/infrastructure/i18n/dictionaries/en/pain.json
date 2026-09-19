@@ -1,0 +1,31 @@
+{
+  "title": "Your pain journal",
+  "emptyTitle": "Where does it hurt?",
+  "emptyDescription": "Select a region on the body. We’ll help you capture what you’re feeling, one detail at a time.",
+  "stepSelect": "Find the area",
+  "stepDescribe": "Describe the feeling",
+  "stepSave": "Keep a personal record",
+  "intensity": "How intense is the pain?",
+  "mild": "Mild",
+  "moderate": "Moderate",
+  "severe": "Severe",
+  "notes": "What does it feel like?",
+  "optional": "Optional",
+  "notesPlaceholder": "A dull ache, a sharp sensation, when it started…",
+  "date": "When did you feel it?",
+  "save": "Save entry",
+  "saving": "Saving…",
+  "saved": "Entry saved to your journal.",
+  "close": "Close pain form",
+  "history": "Recent entries",
+  "historyEmpty": "Your story starts here. Saved entries will appear in your journal.",
+  "historyLimit": "Your 20 most recent entries",
+  "privacy": "Your entries are linked to your account.",
+  "loginPrompt": "Sign in to save your entry. Your draft stays here.",
+  "errors": {
+    "invalid": "Check the region, intensity (1–10), date, and notes (up to 2,000 characters).",
+    "unauthorized": "Your session has expired. Sign in again to save this entry.",
+    "missingRegion": "This region is not available for recording yet. Please try again later.",
+    "connection": "We couldn’t reach your journal. Your draft is still here; please try again."
+  }
+}

@@ -4,5 +4,15 @@
   "blog": "Blog",
   "profile": "Profile",
   "login": "Log In",
-  "register": "Sign Up"
+  "register": "Sign Up",
+  "features": "Features",
+  "pain": "Pain journal",
+  "community": "Community",
+  "faq": "FAQ",
+  "menu": "Open navigation",
+  "closeMenu": "Close navigation",
+  "navigation": "Main navigation",
+  "skip": "Skip to body map",
+  "language": "Cambiar a español",
+  "signOut": "Sign out"
 }

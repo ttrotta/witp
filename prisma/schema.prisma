@@ -45,6 +45,7 @@ model User {
   following      Follows[]    @relation("UserFollowing")
 
   painRecords    PainRecord[]
+  sessions       Session[]
   posts          Post[]
   comments       Comment[]
   likes          Like[]
@@ -60,6 +61,16 @@ model UserProfile {
 
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId      String    @unique @db.Uuid
+}
+
+model Session {
+  tokenHash String   @id
+  expiresAt DateTime
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model UserSettings {
@@ -119,6 +130,7 @@ model PainRecord {
   intensity  Int      /// Valid range: 1-10. 
   notes      String?  @db.Text
   createdAt  DateTime @default(now())
+  recordedAt DateTime @default(now()) @db.Date
 
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId     String   @db.Uuid

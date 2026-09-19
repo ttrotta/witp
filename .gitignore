@@ -36,6 +36,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # vercel
 .vercel
@@ -52,3 +53,7 @@ next-env.d.ts
 .gemini/**
 .codex/**
 
+# Local design review artifacts
+.impeccable/*
+!.impeccable/home.md
+!.impeccable/design.json

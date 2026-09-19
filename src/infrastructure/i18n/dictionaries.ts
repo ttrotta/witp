@@ -29,10 +29,14 @@ export type Dictionary = {
   community: CommunityDict;
   dashboard: DashboardDict;
   nav: NavDict;
+  anatomy: typeof import("./dictionaries/en/anatomy.json");
+  pain: typeof import("./dictionaries/en/pain.json");
 };
 
 const dictionaries: Record<Locale, () => Promise<Dictionary>> = {
   en: async () => ({
+    anatomy: (await import("./dictionaries/en/anatomy.json")).default,
+    pain: (await import("./dictionaries/en/pain.json")).default,
     common: (await import("./dictionaries/en/common.json")).default,
     auth: (await import("./dictionaries/en/auth.json")).default,
     community: (await import("./dictionaries/en/community.json")).default,
@@ -40,6 +44,8 @@ const dictionaries: Record<Locale, () => Promise<Dictionary>> = {
     nav: (await import("./dictionaries/en/nav.json")).default,
   }),
   es: async () => ({
+    anatomy: (await import("./dictionaries/es/anatomy.json")).default,
+    pain: (await import("./dictionaries/es/pain.json")).default,
     common: (await import("./dictionaries/es/common.json")).default,
     auth: (await import("./dictionaries/es/auth.json")).default,
     community: (await import("./dictionaries/es/community.json")).default,
