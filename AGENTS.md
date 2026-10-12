@@ -62,9 +62,14 @@ Each component has its own AGENTS.md with specific guidelines:
 
 | Component          | Location                       | Description                                    |
 | ------------------ | ------------------------------ | ---------------------------------------------- |
-| **UI**             | `src/ui/AGENTS.md`             | Next.js App Router, React components, Tailwind |
+| **UI**             | `src/app/AGENTS.md`            | Next.js App Router, React components, Tailwind |
 | **Modules**        | `src/modules/AGENTS.md`        | Domain logic, Server Actions, Zod schemas      |
 | **Infrastructure** | `src/infrastructure/AGENTS.md` | Prisma, i18n, configuration                    |
+
+## Canonical Documentation Synchronization (MANDATORY)
+
+- **Rule 1 (Database)**: Any change to `prisma/schema.prisma`, Prisma migrations (`prisma/migrations/*`), database constraints, or seed data MUST immediately update `docs/database/SCHEMA.md`.
+- **Rule 2 (API & Server Actions)**: Any addition, removal, or modification of Server Actions (`src/modules/*/actions.ts`), Zod schemas (`src/modules/*/schemas.ts`), guards, or API routes MUST immediately update `docs/API.md` (including REST contracts, payloads, and HTTP status codes).
 
 ## Commit Guidelines
 
