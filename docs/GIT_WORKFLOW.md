@@ -135,7 +135,7 @@ Breaking changes must be denoted in one of two ways:
 > - ❌ `Generated with Claude Code / Cursor / Copilot`
 > - ❌ `Assisted-by: AI Assistant`
 >
-> Commits containing any AI-related trailers or automated signatures will be rejected by repository checks. All commit messages must reflect pure technical intent and adhere strictly to Conventional Commits.
+> Pull requests containing commits with AI-related trailers or automated signatures fail the `CI` workflow (`.github/workflows/ci.yml`). All commit messages must reflect pure technical intent and adhere strictly to Conventional Commits.
 
 ### Atomic & Logical Commits
 
@@ -197,7 +197,7 @@ Branch names must use all-lowercase alphanumeric characters separated by hyphens
 
 ## Pre-Commit & Verification Pipeline
 
-Before staging files or creating a pull request, run the following three quality checks locally. All three must succeed with zero errors.
+Before staging files or creating a pull request, run the following three quality checks locally. All three must succeed with zero errors. The `CI` GitHub Actions workflow repeats them on every pull request and on pushes to `main`, and also runs `pnpm build`. Make it a required status check in the branch protection settings for `main`.
 
 ```mermaid
 flowchart LR
@@ -225,11 +225,11 @@ Enforces Next.js App Router rules, React 19 compiler guidelines, and ESLint conf
 ```bash
 pnpm lint
 ```
-*Under the hood: `eslint` across `src/`, `prisma/`, and configuration files.*
+*Under the hood: `eslint` across the repository, including the layer boundary rules in `eslint.config.mjs`.*
 
 ### 3. Test Suite Execution
 
-Executes the Node.js test runner validating Draco asset decompression, Zod boundaries, and cryptographic session verification:
+Executes the Node.js test runner validating Draco asset decompression, Zod boundaries, password hashing, rate limits, and the locale proxy matcher:
 
 ```bash
 pnpm test

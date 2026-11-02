@@ -124,10 +124,10 @@ The `src/app` directory implements the Next.js 16 App Router using dynamic local
 src/app/
 ├── [lang]/
 │   ├── (auth)/             # Route group for authentication screens
-│   ├── (community)/        # Route group for community feed and forum
-│   ├── (dashboard)/        # Route group for logged-in pain dashboard
+│   ├── (community)/        # Forum and post routes (coming-soon views for now)
+│   ├── (dashboard)/        # Blog and profile routes (coming-soon views for now)
 │   ├── layout.tsx          # Root localized layout (i18n provider, font loading)
-│   └── page.tsx            # Root landing page (3D hero, waitlist capture)
+│   └── page.tsx            # Home: 3D body map, pain journal, features, FAQ
 ├── favicon.ico
 └── globals.css             # Tailwind CSS v4 design tokens and base styles
 ```
@@ -147,9 +147,9 @@ Domain logic is compartmentalized into self-contained modules under `src/modules
 | **`anatomy-3d`** | 3D human model rendering, camera viewport transitions, Draco decompression, shader materials, and raycast picking. | `HumanModel.tsx`, `AnatomyCanvas.tsx`, `AnatomyScene.tsx`, `ViewportControls.tsx`, `generate-model.ts` |
 | **`auth`** | User registration, credential verification, cryptographic session management, and auth forms. | `actions.ts` (`authenticate`, `signOut`), `schemas.ts` (`authSchema`), UI forms |
 | **`pain-tracking`** | Pain recording (intensity scale 0–10, notes, timestamps), anatomical region mapping, and historical logs. | `actions.ts` (`createPainRecord`, `getPainHistory`), `schemas.ts` (`painRecordSchema`), pain cards |
-| **`community`** | Peer interactions, discussion posts, threaded replies, post reactions/likes, and educational medical entries. | `actions.ts` (`createPost`, `createComment`, `toggleLike`), discussion feeds |
-| **`user-profile`** | User bios, demographic profiles, notification preferences, and follow graphs. | `actions.ts` (`updateUserProfile`, `toggleFollowUser`), settings panels |
-| **`waitlist`** | Pre-launch subscription handling, duplicate email prevention, and landing page notifications. | `actions.ts` (`subscribeToWaitlist`), `schemas.ts` (`waitlistSchema`), signup components |
+| **`community`** | Peer interactions, discussion posts, threaded replies, post reactions/likes, and educational medical entries. | `schemas.ts` (implemented). `actions.ts` and UI are empty or planned. |
+| **`user-profile`** | User bios, demographic profiles, notification preferences, and follow graphs. | `schemas.ts` (implemented). `actions.ts` and UI are empty or planned. |
+| **`waitlist`** | Pre-launch subscription handling, per-IP throttling, and duplicate email prevention. | `actions.ts` (`subscribeToWaitlist`), `schemas.ts` (`waitlistSchema`), `NotifySection.tsx` (shown on coming-soon pages) |
 
 #### Anatomy of a Domain Module:
 Each module encapsulates its full vertical slice:
@@ -168,7 +168,7 @@ src/modules/[domain]/
 
 The `src/shared` layer contains reusable primitives and cross-cutting capabilities that do not belong to any single business domain:
 
-- **`src/shared/ui/`**: Domain-agnostic design system primitives (e.g., `Navbar.tsx`, buttons, modals, input fields) built with Tailwind CSS v4 and Lucide icons.
+- **`src/shared/ui/`**: Domain-agnostic presentation primitives (`Navbar.tsx`, `ComingSoon.tsx`) built with Tailwind CSS v4 and Lucide icons.
 - **`src/shared/store/`**: Cross-cutting Zustand stores. The canonical example is `useAnatomyStore.ts`, which bridges 3D viewport interactions with DOM pain tracking forms.
 - **`src/shared/anatomy.ts`**: The single source of truth for anatomical landmarks. Exports `bodyParts` with 3D spatial center coordinates, the `MeshId` union type, and the `isMeshId` type guard.
 - **`src/shared/types/`**: Shared TypeScript definitions, utility types, and generic API response shapes.
@@ -182,18 +182,18 @@ The `src/infrastructure` directory isolates low-level technical concerns, third-
 - **`src/infrastructure/auth/`**:
   - `session.ts`: Cryptographic token generation (`crypto.randomBytes`), SHA-256 token hashing, session creation, validation against PostgreSQL, and secure cookie configuration.
   - `password.ts`: Secure password hashing using Node.js `crypto.scrypt` with random salt generation and constant-time buffer comparison (`crypto.timingSafeEqual`).
-  - `rate-limit.ts`: In-memory sliding-window rate limiter protecting authentication endpoints from brute-force attacks.
+  - `rate-limit.ts`: In-memory fixed-window rate limiter (`allowAttempt`) protecting authentication and waitlist actions. State is per process, so it needs a shared store before it can hold across multiple instances.
 - **`src/infrastructure/i18n/`**:
   - `dictionaries.ts`: Server-side loader for JSON locale dictionaries (`en`, `es`).
   - `proxy.ts`: Edge-compatible language negotiation based on `Accept-Language` headers and cookie overrides.
   - `I18nProvider.tsx` & `useTranslation.ts`: Client-side translation context and hook.
-- **`src/infrastructure/env/`**: Strongly-typed runtime validation for server and client environment variables.
+- **`src/infrastructure/env/`**: Reserved for typed environment validation. The file is empty today, and code reads `process.env` directly.
 
 ### 5. AI & Agent Protocols: `src/ai`
 
-The `src/ai` directory encapsulates Model Context Protocol (MCP) server implementation and autonomous agent logic:
-- **`mcp/protocol.ts` & `mcp/server.ts`**: Standardized MCP server exposing WITP anatomical data, clinical condition queries, and symptom correlation tools to external LLM agents.
-- **`client.ts`**: Central client for interacting with AI models.
+The `src/ai` directory is reserved for the Model Context Protocol (MCP) server and autonomous agent logic. Every file in it is an empty placeholder today, as are `modules/pain-tracking/ai/` and `modules/community/ai/`:
+- **`mcp/protocol.ts` & `mcp/server.ts`** *[ROADMAP]*: MCP server exposing WITP anatomical data, clinical condition queries, and symptom correlation tools to external LLM agents.
+- **`client.ts`** *[ROADMAP]*: Central client for interacting with AI models.
 
 ---
 
@@ -201,15 +201,17 @@ The `src/ai` directory encapsulates Model Context Protocol (MCP) server implemen
 
 ### Dependency Rule Matrix
 
-WITP enforces rigorous architectural boundaries. Violations degrade modularity and are rejected by linting and architectural reviews:
+WITP enforces rigorous architectural boundaries. `no-restricted-imports` rules in `eslint.config.mjs` reject violations that use the `@/` alias, so they fail `pnpm lint` and CI. Relative imports and the types-only rule for `infrastructure` rely on review:
 
 | Importing From \ Allowed Target | `app` | `modules` | `shared` | `infrastructure` | `ai` |
 | :--- | :---: | :---: | :---: | :---: | :---: |
 | **`app`** | ❌ (sibling only) | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Yes |
 | **`modules/[A]`** | ❌ **FORBIDDEN** | ❌ **FORBIDDEN (to [B])** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **`shared`** | ❌ **FORBIDDEN** | ❌ **FORBIDDEN** | ❌ (sibling only) | ❌ **FORBIDDEN** | ❌ **FORBIDDEN** |
+| **`shared`** | ❌ **FORBIDDEN** | ❌ **FORBIDDEN** | ❌ (sibling only) | ⚠️ `i18n` only | ❌ **FORBIDDEN** |
 | **`infrastructure`** | ❌ **FORBIDDEN** | ❌ **FORBIDDEN** | ✅ Types only | ❌ (sibling only) | ❌ **FORBIDDEN** |
 | **`ai`** | ❌ **FORBIDDEN** | ❌ **FORBIDDEN** | ✅ Yes | ✅ Yes | ❌ (sibling only) |
+
+`shared/ui/Navbar.tsx` reads translations through `useTranslation`, which is why `infrastructure/i18n` is the single exception for `shared`.
 
 #### Cardinal Dependency Rules:
 1. **Rule 1: No Upward Imports from `app/`**:
@@ -230,27 +232,27 @@ flowchart TD
     subgraph ClientCoordination ["Client-Side Interaction (User Clicks 3D Mesh)"]
         AnatomyComponent["anatomy-3d / HumanModel.tsx"]
         Store["shared/store / useAnatomyStore"]
-        PainFormComponent["pain-tracking / PainForm.tsx"]
+        PainFormComponent["pain-tracking / PainLogSidebar.tsx"]
 
         AnatomyComponent -->|1. setSelectedMesh('knee_r')| Store
         Store -->|2. Reactive state subscription| PainFormComponent
     end
 
     subgraph ServerComposition ["Server-Side Composition (Page Loading)"]
-        DashboardPage["app/[lang]/(dashboard)/page.tsx"]
+        HomePage["app/[lang]/page.tsx"]
         PainModuleAction["pain-tracking / actions.ts (getPainHistory)"]
-        ProfileModuleAction["user-profile / actions.ts (getUserProfile)"]
+        AuthForm["auth / AuthForm.tsx"]
 
-        DashboardPage -->|Fetch pain data| PainModuleAction
-        DashboardPage -->|Fetch profile data| ProfileModuleAction
-        DashboardPage -->|Compose props| UnifiedView["Dashboard UI Layout"]
+        HomePage -->|Fetch pain data| PainModuleAction
+        HomePage -->|Inject as authForm prop| AuthForm
+        HomePage -->|Compose props| UnifiedView["PainLogSidebar"]
     end
 ```
 
 1. **Client-Side State Coordination**:
    If the user clicks an anatomical mesh rendered by `anatomy-3d`, the component updates `useAnatomyStore.getState().setSelectedMesh(meshId)`. The `pain-tracking` form observes `selectedMeshId` and auto-populates the target body region. Neither module knows about the other.
 2. **Server-Side Composition in `src/app`**:
-   If a dashboard page needs to display both the user profile and their historical pain records, `src/app/[lang]/(dashboard)/page.tsx` imports `getUserProfile` and `getPainHistory`, fetches the data concurrently on the server, and injects the results into the respective module views.
+   The home page needs the pain journal to offer sign-in without `pain-tracking` importing `auth`. `src/app/[lang]/page.tsx` fetches the dictionary, session user and `getPainHistory` concurrently, then passes `<AuthForm />` into `PainLogSidebar` through its `authForm` prop.
 
 ---
 
@@ -260,7 +262,7 @@ flowchart TD
 
 The 3D interactive human model is powered by:
 - **React Three Fiber (R3F) v9.7.0**: Declarative Three.js scene graph management integrated with React 19.
-- **@react-three/drei v10.7.8**: Helper primitives including `useGLTF`, `OrbitControls`, and environment presets.
+- **@react-three/drei v10.7.8**: Helper primitives including `useGLTF`, `CameraControls`, and `Html`.
 - **Three.js v0.186.0**: WebGL rendering engine.
 - **Google Draco Compression**: `KHR_draco_mesh_compression` decompressed on the client via WebAssembly (`/draco/draco_decoder.wasm`).
 
@@ -271,8 +273,8 @@ sequenceDiagram
     participant Canvas as AnatomyCanvas (R3F)
     participant Model as HumanModel.tsx
     participant Store as useAnatomyStore (Zustand)
-    participant Controls as ViewportControls (OrbitControls)
-    participant PainForm as Pain Tracking Form (DOM)
+    participant Controls as CameraRig (CameraControls)
+    participant PainForm as PainLogSidebar (DOM)
 
     Canvas->>Model: Load /models/anatomy.glb with Draco decoder
     Model-->>Canvas: Meshes parsed and geometry uploaded to GPU
@@ -282,9 +284,9 @@ sequenceDiagram
     User->>Model: Click mesh (delta <= 4px)
     Model->>Store: setSelectedMesh("knee_r")
     Store->>Store: Update cameraTarget [-0.145, 0.485, 0.015]
-    Store-->>Controls: Animate OrbitControls target to body part center
-    Store-->>PainForm: Auto-select "knee_r" in pain record dropdown
-    Model->>Canvas: invalidate() triggers on-demand frame render
+    Store-->>Controls: setLookAt animates the camera to the body part center
+    Store-->>PainForm: Open the pain form for "knee_r"
+    Model->>Canvas: State changes schedule an on-demand frame render
 ```
 
 ### Procedural Model Pipeline & Draco Compression
@@ -298,7 +300,7 @@ Rather than loading bulky uncompressed assets, WITP generates an optimized, styl
    - Processes the geometry through `@gltf-transform/core` and `@gltf-transform/extensions`.
    - Compresses vertex coordinates, normals, and indices using `draco3dgltf` into Google Draco format.
    - Outputs the final binary asset to `public/models/anatomy.glb` (under 2 MB, compressed from raw geometries).
-   - Copies WASM decoder binaries to `public/draco/draco_decoder.wasm` for client-side multi-threaded decoding.
+   - Copies WASM decoder binaries to `public/draco/draco_decoder.wasm` for client-side decoding.
 
 ### The Canonical `meshId` Contract
 
@@ -363,14 +365,14 @@ type AnatomyState = {
 When `setSelectedMesh("knee_r")` is called:
 1. `selectedMeshId` updates to `"knee_r"`.
 2. `cameraTarget` is calculated from the body part's 3D spatial center `[-0.145, 0.485, 0.015]`.
-3. `ViewportControls.tsx` observes `cameraTarget` and smoothly interpolates the camera pivot using GSAP / OrbitControls damping.
-4. DOM panels (e.g. pain severity selector, recent pain cards) highlight the chosen part.
+3. `CameraRig` in `AnatomyScene.tsx` observes `cameraTarget` and animates the camera with `CameraControls.setLookAt`. Motion is skipped under `prefers-reduced-motion`. GSAP is installed but not used by the viewer.
+4. `PainLogSidebar` opens the pain form for the chosen part, and `ViewportControls.tsx` offers reset, front/back and zoom.
 
 ### On-Demand Rendering & Performance
 
 To preserve mobile battery life and eliminate unnecessary GPU cycles:
 - **`frameloop="demand"`**: The R3F canvas does not run an unconstrained 60/120 FPS render loop when idle.
-- **Explicit Invalidation**: Any user interaction (hover, selection, or camera manipulation) invokes `useThree().invalidate()` to re-render the frame on demand.
+- **Invalidation**: R3F schedules a frame when scene props change, `CameraControls` does so while the camera moves, and `HumanModel` calls `invalidate()` once the model has loaded.
 - **Memory Management**: Geometries and textures are cached by Drei's `useGLTF` hook, preventing memory leaks during route changes.
 
 ---
@@ -379,7 +381,7 @@ To preserve mobile battery life and eliminate unnecessary GPU cycles:
 
 ### Next.js Server Actions Model
 
-WITP rejects generic, weakly-typed REST routes (`/api/*`) in favor of **Next.js Server Actions** (`"use server"`). Server actions serve as direct Remote Procedure Calls (RPC):
+The web application talks to the server exclusively through **Next.js Server Actions** (`"use server"`), which serve as direct Remote Procedure Calls (RPC). REST routes under `/api/*` are planned for external clients only, and `docs/API.md` holds their target contract. No route exists yet. The locale proxy skips `/api/*` so they can be added without routing changes.
 
 ```mermaid
 sequenceDiagram
@@ -391,19 +393,19 @@ sequenceDiagram
     participant DB as Prisma v7 / Supabase PostgreSQL
     participant Cache as Next.js Cache Engine
 
-    Browser->>Action: action(payload) via encrypted POST
-    Action->>Guard: Verify session cookie / check rate limits
-    alt Access Denied
-        Guard-->>Browser: { error: "unauthorized" | "rate_limited" }
-    else Access Granted
-        Action->>Zod: schema.safeParse(payload)
-        alt Invalid Schema
-            Zod-->>Browser: { error: "invalid_input", details: [...] }
-        else Valid Schema
+    Browser->>Action: action(payload) via POST
+    Action->>Zod: schema.safeParse(payload)
+    alt Invalid Schema
+        Zod-->>Browser: { error: "invalid" }
+    else Valid Schema
+        Action->>Guard: Check rate limit / session cookie
+        alt Access Denied
+            Guard-->>Browser: { error: "rateLimited" | "unauthorized" }
+        else Access Granted
             Action->>DB: prisma.[entity].create/findUnique()
             DB-->>Action: Record returned
             Action->>Cache: revalidatePath("/", "layout")
-            Action-->>Browser: { success: true, data: result }
+            Action-->>Browser: { success: true }
         end
     end
 ```
@@ -415,10 +417,12 @@ Every action strictly validates incoming arguments at runtime using Zod 4:
 ```typescript
 // Example: src/modules/pain-tracking/schemas.ts
 export const painRecordSchema = z.object({
-  meshId: z.string().refine(isMeshId, "Invalid anatomical mesh region"),
+  meshId: z.string().refine(isMeshId),
   intensity: z.number().int().min(1).max(10),
-  notes: z.string().trim().max(2000).optional(),
-  recordedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
+  notes: z.string().trim().max(2000).default(""),
+  recordedAt: z.iso
+    .date()
+    .refine((date) => Date.parse(date) <= Date.now() + 24 * 60 * 60 * 1000),
 });
 ```
 
@@ -435,19 +439,25 @@ Authentication is validated using secure cryptographic primitives:
    - Calculates `tokenHash = crypto.createHash("sha256").update(token).digest("hex")`.
    - Queries `prisma.session.findUnique()` with expiration check (`expiresAt > new Date()`).
    - Ensures associated `User.status === 'ACTIVE'`.
-3. **Rate Limiting**: Mutation actions prone to abuse (e.g. login attempts) call `allowAuthAttempt(email)` to reject requests exceeding the sliding window (max 8 attempts per 15 minutes).
+3. **Rate Limiting**: Mutation actions prone to abuse (e.g. login attempts) call `allowAuthAttempt(email)` to reject requests exceeding the fixed window (max 8 attempts per 15 minutes). `subscribeToWaitlist` applies the same limiter per IP (max 5 attempts per 10 minutes).
 
 ### Standardized Response Envelopes
 
-All Server Actions return a discriminated union:
+Server Actions return plain result objects with stable, translatable error codes. There is no shared wrapper type yet, so each action declares its own shape. `docs/API.md` lists them all:
 
 ```typescript
-export type ActionResult<T> =
-  | { success: true; data: T }
-  | { error: string; details?: unknown };
+// authenticate, createPainRecord
+type MutationResult<Code extends string> =
+  | { success: true }
+  | { error: Code };
+
+// subscribeToWaitlist
+type WaitlistResult =
+  | { success: true }
+  | { success: false; error: "invalid" | "duplicate" | "rateLimited" | "connection" };
 ```
 
-This prevents unhandled runtime exceptions from leaking sensitive server traces to the client and forces client components to explicitly handle both error and success states.
+Actions catch expected failures, so server traces never reach the client and components map each code to a translated message. `signOut` is the exception: it returns nothing and lets database errors propagate.
 
 ### Cache Revalidation Lifecycle
 
@@ -455,7 +465,7 @@ When an action mutates state (such as recording new pain or signing out):
 1. The mutation commits to PostgreSQL.
 2. The action calls Next.js `revalidatePath`:
    ```typescript
-   revalidatePath("/[lang]/dashboard", "page");
+   revalidatePath("/", "layout");
    ```
 3. Next.js re-renders affected Server Components in the background and delivers updated payloads to the client without requiring a full browser reload.
 
@@ -464,7 +474,8 @@ When an action mutates state (such as recording new pain or signing out):
 ## Project Directory Layout
 
 ```
-/home/ttrotta/orca/witp/
+witp/
+├── .github/workflows/ci.yml        # Typecheck, lint, test, build and commit trailer checks
 ├── docs/                           # Canonical technical documentation
 │   ├── ARCHITECTURE.md             # This document: Screaming Architecture & 3D specification
 │   ├── API.md                      # Complete Server Actions RPC contracts & security matrix
@@ -474,7 +485,8 @@ When an action mutates state (such as recording new pain or signing out):
 │   ├── database/
 │   │   └── SCHEMA.md               # Authoritative database model reference & DDL
 │   └── memory/
-│       └── 2026-10.md              # Monthly chronological architecture log & context
+│       ├── 2026-10.md              # Monthly chronological architecture log & context
+│       └── 2026-11.md
 ├── prisma/
 │   ├── migrations/                 # PostgreSQL migration SQL files
 │   ├── schema.prisma               # Prisma data models and relations
@@ -490,6 +502,7 @@ When an action mutates state (such as recording new pain or signing out):
 │   ├── modules/                    # Domain modules (anatomy-3d, pain-tracking, auth, etc.)
 │   ├── shared/                     # Shared UI primitives, useAnatomyStore, anatomy contract
 │   └── proxy.ts                    # Edge language proxy / negotiator
+├── eslint.config.mjs               # Lint rules, including layer boundary enforcement
 ├── prisma.config.ts                # Prisma ORM v7 configuration (defineConfig)
 ├── package.json                    # Project dependencies, scripts, packageManager
 ├── tsconfig.json                   # Strict TypeScript path aliases (@/*, @generated/*)

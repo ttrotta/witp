@@ -2,10 +2,13 @@
 
 > **System**: What is This Pain? (WITP)  
 > **Architecture Pattern**: Screaming Architecture / Next.js 16 App Router  
-> **API Protocols**: Next.js Server Actions RPC (`"use server"`) & Standard REST HTTP (`/api/*`)  
+> **API Protocols**: Next.js Server Actions RPC (`"use server"`, implemented) & Standard REST HTTP (`/api/*`, target contract, not implemented yet)  
 > **Type Safety & Validation**: End-to-end TypeScript with Zod runtime schema validation  
-> **Session Transport**: HTTP-only, secure, lax cookie (`witp-session`) or `Authorization: Bearer <token>`  
+> **Session Transport**: HTTP-only, secure, lax cookie (`witp-session`). `Authorization: Bearer <token>` is part of the REST target contract and is not implemented yet  
 > **Authentication Guards**: `Public`, `Public + Rate Limit`, `Authenticated User`, `Role-based (USER | ADMIN | MEDICAL_EXPERT)`
+
+> [!IMPORTANT]
+> **How to read this document.** No `/api/*` route exists yet: every REST section below is the **target contract** for external clients. What runs today is the set of Server Actions listed in [Current Server Action Contracts](#current-server-action-contracts), and their return values differ from the REST payloads. Check the [route matrix](#api-security-route-matrix) for the status of each entry.
 
 ---
 
@@ -19,6 +22,7 @@
   - [Request Lifecycle Flow](#request-lifecycle-flow)
 - [API Security & Route Matrix](#api-security-route-matrix)
 - [Implemented Core Modules](#implemented-core-modules)
+  - [Current Server Action Contracts](#current-server-action-contracts)
   - [1. Authentication Module (`src/modules/auth`)](#1-authentication-module-srcmodulesauth)
     - [`POST /api/auth/register`](#post-apiauthregister)
     - [`POST /api/auth/login`](#post-apiauthlogin)
@@ -54,11 +58,11 @@
 
 ### Dual Protocol Architecture: Server Actions RPC & REST Endpoints
 
-WITP implements a unified dual-interface model:
+WITP is designed around a dual-interface model. Only the Server Actions interface exists today:
 1. **Next.js Server Actions RPC (`"use server"`)**: Used natively by React Server and Client Components within the web application. Server Actions eliminate client bundle bloat, enforce CSRF header verification automatically, and leverage Next.js cache revalidation (`revalidatePath`).
-2. **REST HTTP Endpoints (`/api/*`)**: Standardized RESTful endpoints compliant with RFC 9110 HTTP semantics for external mobile apps, third-party medical integrations, headless clients, and automated integration suites.
+2. **REST HTTP Endpoints (`/api/*`) *[ROADMAP]***: Standardized RESTful endpoints compliant with RFC 9110 HTTP semantics for external mobile apps, third-party medical integrations, headless clients, and automated integration suites.
 
-Both interfaces share identical domain layers, Prisma database transactions, Zod schemas, security guards, and error codes.
+Once implemented, both interfaces will share identical domain layers, Prisma database transactions, Zod schemas, security guards, and error codes.
 
 ```mermaid
 flowchart TD
@@ -117,30 +121,30 @@ flowchart TD
 
 ### Security Guards and Authorization Pipeline
 
-Every endpoint and Server Action strictly enforces one of four access control tiers:
+Every endpoint and Server Action is assigned one of four access control tiers:
 
 1. **`Public`**:
    - Invocable without authentication credentials or session tokens.
    - Intended for static public queries, public user profiles, or forum read operations.
 2. **`Public + Rate Limit`**:
-   - Invocable by anonymous callers, but throttled by an in-memory / distributed sliding window limiter.
+   - Invocable by anonymous callers, but throttled by an in-memory fixed-window limiter (`allowAttempt`). State is per process, so serverless instances do not share counters until a shared store replaces it.
    - Authentication attempts are limited to 8 attempts per 15-minute window per email (`allowAuthAttempt`).
-   - Waitlist registrations and public forms are rate-limited per IP address.
+   - Waitlist registrations are limited to 5 attempts per 10-minute window per IP address, read from the first `x-forwarded-for` value. That header is only trustworthy behind a proxy that sets it, such as Vercel.
 3. **`Authenticated User`**:
-   - Requires a valid, unexpired session resolved via [`getSessionUser()`](file:///home/ttrotta/orca/witp/src/infrastructure/auth/session.ts#L9-L26).
-   - Authentication state is verified by either:
+   - Requires a valid, unexpired session resolved via [`getSessionUser()`](../src/infrastructure/auth/session.ts).
+   - Authentication state is verified by:
      - `Cookie: witp-session=<session_token>` (hex string, 64 characters)
-     - `Authorization: Bearer <session_token>`
-   - The session token is hashed with SHA-256 (`tokenHash`) and verified against the `Session` database table. The associated [`User`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L28-L53) must have `status === "ACTIVE"`.
+     - `Authorization: Bearer <session_token>` *[ROADMAP: REST only]*
+   - The session token is hashed with SHA-256 (`tokenHash`) and verified against the `Session` database table. The associated [`User`](../prisma/schema.prisma) must have `status === "ACTIVE"`.
 4. **`Role-based (USER | ADMIN | MEDICAL_EXPERT)`**:
-   - Requires an authenticated user session plus verification that [`User.role`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L10-L14) possesses the requisite permission level:
+   - Requires an authenticated user session plus verification that [`User.role`](../prisma/schema.prisma) possesses the requisite permission level:
      - `USER`: General registered patients and community participants.
      - `MEDICAL_EXPERT`: Verified clinicians permitted to author medical blog guides and clinical content.
      - `ADMIN`: Full administrative control over user accounts, content moderation, and platform configuration.
 
 ### Standardized Response Envelopes & Error Models
 
-All REST responses adhere to a consistent JSON envelope schema:
+All REST responses will adhere to a consistent JSON envelope schema. Server Actions return the shapes in [Current Server Action Contracts](#current-server-action-contracts) instead:
 
 #### Success Envelope (`200 OK`, `201 Created`)
 ```json
@@ -213,30 +217,44 @@ sequenceDiagram
 
 ## API Security & Route Matrix
 
-| HTTP Method & Route | Module | Guard Level | Permitted Roles | Rate Limit | Implementation Status | Corresponding Action |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `POST /api/auth/register` | `auth` | `Public + Rate Limit` | Anonymous | 8 req / 15 min per email | **Implemented** | [`authenticate`](file:///home/ttrotta/orca/witp/src/modules/auth/actions.ts#L10-L47) |
-| `POST /api/auth/login` | `auth` | `Public + Rate Limit` | Anonymous | 8 req / 15 min per email | **Implemented** | [`authenticate`](file:///home/ttrotta/orca/witp/src/modules/auth/actions.ts#L10-L47) |
-| `POST /api/auth/logout` | `auth` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | **Implemented** | [`signOut`](file:///home/ttrotta/orca/witp/src/modules/auth/actions.ts#L49-L52) |
-| `GET /api/pains` | `pain-tracking` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | **Implemented** | [`getPainHistory`](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/actions.ts#L36-L65) |
-| `POST /api/pains` | `pain-tracking` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | **Implemented** | [`createPainRecord`](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/actions.ts#L8-L34) |
-| `POST /api/waitlist` | `waitlist` | `Public + Rate Limit` | Anonymous | 5 req / 10 min per IP | **Implemented** | [`subscribeToWaitlist`](file:///home/ttrotta/orca/witp/src/modules/waitlist/actions.ts#L7-L34) |
-| `POST /api/community/posts` | `community` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | 10 req / hour | *[ROADMAP]* | [`createPost`](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts) |
-| `GET /api/community/posts` | `community` | `Public` | All | None | *[ROADMAP]* | [`getPosts`](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts) |
-| `POST /api/community/comments` | `community` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | 30 req / hour | *[ROADMAP]* | [`createComment`](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts) |
-| `POST /api/community/likes` | `community` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | *[ROADMAP]* | [`toggleLike`](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts) |
-| `POST /api/community/blog` | `community` | `Role-based` | `MEDICAL_EXPERT`, `ADMIN` | None | *[ROADMAP]* | [`createBlogEntry`](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts) |
-| `GET /api/users/:username` | `user-profile` | `Public` | All | None | *[ROADMAP]* | [`getUserProfile`](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts) |
-| `PATCH /api/users/me/profile` | `user-profile` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | *[ROADMAP]* | [`updateUserProfile`](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts) |
-| `PATCH /api/users/me/settings` | `user-profile` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | *[ROADMAP]* | [`updateUserSettings`](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts) |
-| `POST /api/users/:userId/follow` | `user-profile` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | *[ROADMAP]* | [`toggleFollowUser`](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts) |
-| `POST /api/ai/analyze-pain` | `pain-tracking/ai` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | 5 analyses / day | *[ROADMAP]* | `PainAnalystAgent.run` |
-| `POST /api/ai/moderate` | `community/ai` | `Role-based` | Internal Worker, `ADMIN` | None | *[ROADMAP]* | `ModerationAgent.scan` |
-| `POST /api/mcp` | `ai/mcp` | `Authenticated User` | Agent Token, `ADMIN` | None | *[ROADMAP]* | `MCP JSON-RPC Gateway` |
+| HTTP Method & Route | Module | Guard Level | Permitted Roles | Rate Limit | REST Route | Server Action | Validation Schema |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST /api/auth/register` | `auth` | `Public + Rate Limit` | Anonymous | 8 req / 15 min per email | *[ROADMAP]* | **Implemented**: [`authenticate`](../src/modules/auth/actions.ts) | `authSchema` |
+| `POST /api/auth/login` | `auth` | `Public + Rate Limit` | Anonymous | 8 req / 15 min per email | *[ROADMAP]* | **Implemented**: [`authenticate`](../src/modules/auth/actions.ts) | `authSchema` |
+| `POST /api/auth/logout` | `auth` | `Authenticated User` (the action itself is idempotent and unguarded) | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | *[ROADMAP]* | **Implemented**: [`signOut`](../src/modules/auth/actions.ts) | None |
+| `GET /api/pains` | `pain-tracking` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | *[ROADMAP]* | **Implemented**: [`getPainHistory`](../src/modules/pain-tracking/actions.ts) | None (no input) |
+| `POST /api/pains` | `pain-tracking` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | *[ROADMAP]* | **Implemented**: [`createPainRecord`](../src/modules/pain-tracking/actions.ts) | `painRecordSchema` |
+| `POST /api/waitlist` | `waitlist` | `Public + Rate Limit` | Anonymous | 5 req / 10 min per IP | *[ROADMAP]* | **Implemented**: [`subscribeToWaitlist`](../src/modules/waitlist/actions.ts) | `waitlistSchema` |
+| `POST /api/community/posts` | `community` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | 10 req / hour | *[ROADMAP]* | *[ROADMAP]*: `createPost` | **Implemented**: `createPostSchema` |
+| `GET /api/community/posts` | `community` | `Public` | All | None | *[ROADMAP]* | *[ROADMAP]*: `getPosts` | **Implemented**: `listPostsSchema` |
+| `POST /api/community/comments` | `community` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | 30 req / hour | *[ROADMAP]* | *[ROADMAP]*: `createComment` | **Implemented**: `createCommentSchema` |
+| `POST /api/community/likes` | `community` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | *[ROADMAP]* | *[ROADMAP]*: `toggleLike` | **Implemented**: `toggleLikeSchema` |
+| `POST /api/community/blog` | `community` | `Role-based` | `MEDICAL_EXPERT`, `ADMIN` | None | *[ROADMAP]* | *[ROADMAP]*: `createBlogEntry` | **Implemented**: `createBlogEntrySchema` |
+| `GET /api/users/:username` | `user-profile` | `Public` | All | None | *[ROADMAP]* | *[ROADMAP]*: `getUserProfile` | **Implemented**: `usernameSchema` |
+| `PATCH /api/users/me/profile` | `user-profile` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | *[ROADMAP]* | *[ROADMAP]*: `updateUserProfile` | **Implemented**: `updateProfileSchema` |
+| `PATCH /api/users/me/settings` | `user-profile` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | *[ROADMAP]* | *[ROADMAP]*: `updateUserSettings` | **Implemented**: `updateSettingsSchema` |
+| `POST /api/users/:userId/follow` | `user-profile` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | None | *[ROADMAP]* | *[ROADMAP]*: `toggleFollowUser` | **Implemented**: `followUserSchema` |
+| `POST /api/ai/analyze-pain` | `pain-tracking/ai` | `Authenticated User` | `USER`, `ADMIN`, `MEDICAL_EXPERT` | 5 analyses / day | *[ROADMAP]* | *[ROADMAP]*: `PainAnalystAgent.run` | *[ROADMAP]* |
+| `POST /api/ai/moderate` | `community/ai` | `Role-based` | Internal Worker, `ADMIN` | None | *[ROADMAP]* | *[ROADMAP]*: `ModerationAgent.scan` | *[ROADMAP]* |
+| `POST /api/mcp` | `ai/mcp` | `Authenticated User` | Agent Token, `ADMIN` | None | *[ROADMAP]* | *[ROADMAP]*: `MCP JSON-RPC Gateway` | *[ROADMAP]* |
 
 ---
 
 ## Implemented Core Modules
+
+### Current Server Action Contracts
+
+These are the contracts that run in production today. Validation happens before the session check in `createPainRecord`, and before the rate limit in `authenticate`. `subscribeToWaitlist` checks the rate limit first.
+
+| Server Action | Input | Guard | Success Result | Failure Result |
+| :--- | :--- | :--- | :--- | :--- |
+| [`authenticate`](../src/modules/auth/actions.ts) | `authSchema`: `{ mode, email, password, username? }` | 8 attempts / 15 min per email | `{ success: true }`, plus the `witp-session` cookie | `{ error: "invalid" \| "rateLimited" \| "credentials" \| "unavailable" \| "connection" }` |
+| [`signOut`](../src/modules/auth/actions.ts) | None | None (safe without a session) | `undefined`; session row and cookie removed | Throws on database failure |
+| [`createPainRecord`](../src/modules/pain-tracking/actions.ts) | `painRecordSchema`: `{ meshId, intensity, notes?, recordedAt }` | Session required | `{ success: true }` | `{ error: "invalid" \| "unauthorized" \| "missingRegion" \| "connection" }` |
+| [`getPainHistory`](../src/modules/pain-tracking/actions.ts) | None | Session optional; anonymous callers get an empty list | `{ entries: PainEntry[] }`, newest 20 | `{ entries: [], error: "connection" }` |
+| [`subscribeToWaitlist`](../src/modules/waitlist/actions.ts) | `waitlistSchema`: `{ email }` | 5 attempts / 10 min per IP | `{ success: true }` | `{ success: false, error: "invalid" \| "duplicate" \| "rateLimited" \| "connection" }` |
+
+The sections below specify the REST target contract for each module. The query parameters of `GET /api/pains`, `totalCount`, and the `data` objects in the REST responses are not produced by the Server Actions.
 
 ### 1. Authentication Module (`src/modules/auth`)
 
@@ -246,7 +264,7 @@ Registers a new user account with scrypt password hashing, provisions an initial
 
 - **HTTP Method & Route**: `POST /api/auth/register`
 - **Guard & Access Control**: `Public + Rate Limit`
-  - Max 8 registration attempts per 15-minute sliding window per email address via [`allowAuthAttempt`](file:///home/ttrotta/orca/witp/src/infrastructure/auth/rate-limit.ts).
+  - Max 8 registration attempts per 15-minute fixed window per email address via [`allowAuthAttempt`](../src/infrastructure/auth/rate-limit.ts).
 - **Request Specification**:
   - **Headers Required**:
     - `Content-Type: application/json`
@@ -337,9 +355,9 @@ Registers a new user account with scrypt password hashing, provisions an initial
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`authenticate`](file:///home/ttrotta/orca/witp/src/modules/auth/actions.ts#L10-L47) invoked with `{ mode: "register", ... }` in [src/modules/auth/actions.ts](file:///home/ttrotta/orca/witp/src/modules/auth/actions.ts).
-  - Validation Schema: [`authSchema`](file:///home/ttrotta/orca/witp/src/modules/auth/schemas.ts#L3-L19) in [src/modules/auth/schemas.ts](file:///home/ttrotta/orca/witp/src/modules/auth/schemas.ts).
-  - Prisma Models: [`User`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L28-L53), [`Session`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L66-L74).
+  - Corresponding Server Action: [`authenticate`](../src/modules/auth/actions.ts) invoked with `{ mode: "register", ... }` in [src/modules/auth/actions.ts](../src/modules/auth/actions.ts).
+  - Validation Schema: [`authSchema`](../src/modules/auth/schemas.ts) in [src/modules/auth/schemas.ts](../src/modules/auth/schemas.ts).
+  - Prisma Models: [`User`](../prisma/schema.prisma), [`Session`](../prisma/schema.prisma).
 
 ---
 
@@ -349,7 +367,7 @@ Authenticates existing user credentials, applies constant-time verification to p
 
 - **HTTP Method & Route**: `POST /api/auth/login`
 - **Guard & Access Control**: `Public + Rate Limit`
-  - Max 8 login attempts per 15-minute sliding window per email address via [`allowAuthAttempt`](file:///home/ttrotta/orca/witp/src/infrastructure/auth/rate-limit.ts).
+  - Max 8 login attempts per 15-minute fixed window per email address via [`allowAuthAttempt`](../src/infrastructure/auth/rate-limit.ts).
 - **Request Specification**:
   - **Headers Required**:
     - `Content-Type: application/json`
@@ -430,9 +448,9 @@ Authenticates existing user credentials, applies constant-time verification to p
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`authenticate`](file:///home/ttrotta/orca/witp/src/modules/auth/actions.ts#L10-L47) invoked with `{ mode: "login", ... }` in [src/modules/auth/actions.ts](file:///home/ttrotta/orca/witp/src/modules/auth/actions.ts).
-  - Validation Schema: [`authSchema`](file:///home/ttrotta/orca/witp/src/modules/auth/schemas.ts#L3-L19) in [src/modules/auth/schemas.ts](file:///home/ttrotta/orca/witp/src/modules/auth/schemas.ts).
-  - Prisma Models: [`User`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L28-L53), [`Session`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L66-L74).
+  - Corresponding Server Action: [`authenticate`](../src/modules/auth/actions.ts) invoked with `{ mode: "login", ... }` in [src/modules/auth/actions.ts](../src/modules/auth/actions.ts).
+  - Validation Schema: [`authSchema`](../src/modules/auth/schemas.ts) in [src/modules/auth/schemas.ts](../src/modules/auth/schemas.ts).
+  - Prisma Models: [`User`](../prisma/schema.prisma), [`Session`](../prisma/schema.prisma).
 
 ---
 
@@ -485,9 +503,9 @@ Revokes the active user session in the database and clears the `witp-session` HT
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`signOut`](file:///home/ttrotta/orca/witp/src/modules/auth/actions.ts#L49-L52) in [src/modules/auth/actions.ts](file:///home/ttrotta/orca/witp/src/modules/auth/actions.ts).
-  - Helper Function: [`deleteSession`](file:///home/ttrotta/orca/witp/src/infrastructure/auth/session.ts#L46-L52) in [src/infrastructure/auth/session.ts](file:///home/ttrotta/orca/witp/src/infrastructure/auth/session.ts).
-  - Prisma Model: [`Session`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L66-L74).
+  - Corresponding Server Action: [`signOut`](../src/modules/auth/actions.ts) in [src/modules/auth/actions.ts](../src/modules/auth/actions.ts).
+  - Helper Function: [`deleteSession`](../src/infrastructure/auth/session.ts) in [src/infrastructure/auth/session.ts](../src/infrastructure/auth/session.ts).
+  - Prisma Model: [`Session`](../prisma/schema.prisma).
 
 ---
 
@@ -576,9 +594,9 @@ Retrieves the authenticated user's recent pain records ordered chronologically, 
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`getPainHistory`](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/actions.ts#L36-L65) in [src/modules/pain-tracking/actions.ts](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/actions.ts).
-  - TypeScript Types: [`PainEntry`](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/schemas.ts#L14-L20) in [src/modules/pain-tracking/schemas.ts](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/schemas.ts).
-  - Prisma Model: [`PainRecord`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L128-L142), [`BodyPart`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L98-L107).
+  - Corresponding Server Action: [`getPainHistory`](../src/modules/pain-tracking/actions.ts) in [src/modules/pain-tracking/actions.ts](../src/modules/pain-tracking/actions.ts).
+  - TypeScript Types: [`PainEntry`](../src/modules/pain-tracking/schemas.ts) in [src/modules/pain-tracking/schemas.ts](../src/modules/pain-tracking/schemas.ts).
+  - Prisma Model: [`PainRecord`](../prisma/schema.prisma), [`BodyPart`](../prisma/schema.prisma).
 
 ---
 
@@ -596,7 +614,7 @@ Creates a new pain observation linking a 1-10 intensity rating and optional clin
   - **Request Body JSON Schema**:
     | Field | Type | Nullable | Constraints | Description |
     | :--- | :--- | :--- | :--- | :--- |
-    | `meshId` | `string` | No | Must be one of canonical [`bodyParts[number].meshId`](file:///home/ttrotta/orca/witp/src/shared/anatomy.ts#L2-L35) | Anatomical node ID |
+    | `meshId` | `string` | No | Must be one of canonical [`bodyParts[number].meshId`](../src/shared/anatomy.ts) | Anatomical node ID |
     | `intensity` | `integer` | No | Integer in range `1` to `10` inclusive | Visual Analogue Scale (VAS) pain severity |
     | `notes` | `string` | Yes | Max 2000 characters, whitespace trimmed, defaults to `""` | User comments / symptoms |
     | `recordedAt` | `string` | No | ISO 8601 date string `YYYY-MM-DD`, cannot be > 24 hours into future | Date of pain event |
@@ -681,10 +699,10 @@ Creates a new pain observation linking a 1-10 intensity rating and optional clin
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`createPainRecord`](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/actions.ts#L8-L34) in [src/modules/pain-tracking/actions.ts](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/actions.ts).
-  - Validation Schema: [`painRecordSchema`](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/schemas.ts#L4-L11) in [src/modules/pain-tracking/schemas.ts](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/schemas.ts).
-  - Anatomy Contract: [`isMeshId`](file:///home/ttrotta/orca/witp/src/shared/anatomy.ts#L39-L41) in [src/shared/anatomy.ts](file:///home/ttrotta/orca/witp/src/shared/anatomy.ts).
-  - Prisma Models: [`PainRecord`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L128-L142), [`BodyPart`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L98-L107).
+  - Corresponding Server Action: [`createPainRecord`](../src/modules/pain-tracking/actions.ts) in [src/modules/pain-tracking/actions.ts](../src/modules/pain-tracking/actions.ts).
+  - Validation Schema: [`painRecordSchema`](../src/modules/pain-tracking/schemas.ts) in [src/modules/pain-tracking/schemas.ts](../src/modules/pain-tracking/schemas.ts).
+  - Anatomy Contract: [`isMeshId`](../src/shared/anatomy.ts) in [src/shared/anatomy.ts](../src/shared/anatomy.ts).
+  - Prisma Models: [`PainRecord`](../prisma/schema.prisma), [`BodyPart`](../prisma/schema.prisma).
 
 ---
 
@@ -742,7 +760,8 @@ Subscribes an interested user to early platform access by recording their unique
 ```json
 {
   "success": false,
-  "error": "Invalid email address"
+  "error": "invalid",
+  "message": "Invalid email address"
 }
 ```
 
@@ -750,7 +769,8 @@ Subscribes an interested user to early platform access by recording their unique
 ```json
 {
   "success": false,
-  "error": "Email already registered"
+  "error": "duplicate",
+  "message": "Email already registered"
 }
 ```
 
@@ -767,18 +787,21 @@ Subscribes an interested user to early platform access by recording their unique
 ```json
 {
   "success": false,
-  "error": "Something went wrong"
+  "error": "connection",
+  "message": "Something went wrong"
 }
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`subscribeToWaitlist`](file:///home/ttrotta/orca/witp/src/modules/waitlist/actions.ts#L7-L34) in [src/modules/waitlist/actions.ts](file:///home/ttrotta/orca/witp/src/modules/waitlist/actions.ts).
-  - Validation Schema: [`waitlistSchema`](file:///home/ttrotta/orca/witp/src/modules/waitlist/schemas.ts#L3-L5) in [src/modules/waitlist/schemas.ts](file:///home/ttrotta/orca/witp/src/modules/waitlist/schemas.ts).
-  - Prisma Model: [`WaitlistEmail`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L230-L234).
+  - Corresponding Server Action: [`subscribeToWaitlist`](../src/modules/waitlist/actions.ts) in [src/modules/waitlist/actions.ts](../src/modules/waitlist/actions.ts).
+  - Validation Schema: [`waitlistSchema`](../src/modules/waitlist/schemas.ts) in [src/modules/waitlist/schemas.ts](../src/modules/waitlist/schemas.ts).
+  - Prisma Model: [`WaitlistEmail`](../prisma/schema.prisma).
 
 ---
 
 ## Roadmap & Planned Modules [ROADMAP]
+
+The Zod schemas for the community and user-profile endpoints are implemented in [`src/modules/community/schemas.ts`](../src/modules/community/schemas.ts) and [`src/modules/user-profile/schemas.ts`](../src/modules/user-profile/schemas.ts). Their Server Actions, UI, AI agents and MCP gateway are not implemented, and the related pages render a coming-soon view.
 
 ### 4. Community Module (`src/modules/community`)
 
@@ -799,7 +822,7 @@ Publishes a community discussion post pinned to a specific anatomical region (`B
     | :--- | :--- | :--- | :--- | :--- |
     | `title` | `string` | No | Min 5, max 150 characters, trimmed | Post title |
     | `content` | `string` | No | Min 20, max 10000 characters, trimmed | Body text / Markdown |
-    | `meshId` | `string` | No | Must match canonical [`bodyParts[number].meshId`](file:///home/ttrotta/orca/witp/src/shared/anatomy.ts#L2-L35) | Anatomical focus node |
+    | `meshId` | `string` | No | Must match canonical [`bodyParts[number].meshId`](../src/shared/anatomy.ts) | Anatomical focus node |
     | `imageUrl` | `string` | Yes | Valid HTTP(S) URL, optional | Attached diagnostic or context image |
 
 ##### Request Body Example
@@ -894,8 +917,9 @@ Publishes a community discussion post pinned to a specific anatomical region (`B
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`createPost`](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts) in [src/modules/community/actions.ts](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts).
-  - Prisma Model: [`Post`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L144-L162), [`BodyPart`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L98-L107).
+  - Corresponding Server Action: [`createPost`](../src/modules/community/actions.ts) in [src/modules/community/actions.ts](../src/modules/community/actions.ts).
+  - Validation Schema: `createPostSchema` in [src/modules/community/schemas.ts](../src/modules/community/schemas.ts).
+  - Prisma Model: [`Post`](../prisma/schema.prisma), [`BodyPart`](../prisma/schema.prisma).
 
 ---
 
@@ -973,8 +997,9 @@ Lists community discussion posts with cursor-based pagination and filtering by a
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`getPosts`](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts) in [src/modules/community/actions.ts](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts).
-  - Prisma Model: [`Post`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L144-L162).
+  - Corresponding Server Action: [`getPosts`](../src/modules/community/actions.ts) in [src/modules/community/actions.ts](../src/modules/community/actions.ts).
+  - Validation Schema: `listPostsSchema` in [src/modules/community/schemas.ts](../src/modules/community/schemas.ts).
+  - Prisma Model: [`Post`](../prisma/schema.prisma).
 
 ---
 
@@ -1079,8 +1104,9 @@ Publishes a comment on an existing post or a threaded reply to an existing comme
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`createComment`](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts) in [src/modules/community/actions.ts](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts).
-  - Prisma Model: [`Comment`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L164-L182).
+  - Corresponding Server Action: [`createComment`](../src/modules/community/actions.ts) in [src/modules/community/actions.ts](../src/modules/community/actions.ts).
+  - Validation Schema: `createCommentSchema` in [src/modules/community/schemas.ts](../src/modules/community/schemas.ts).
+  - Prisma Model: [`Comment`](../prisma/schema.prisma).
 
 ---
 
@@ -1179,8 +1205,9 @@ Toggles a like reaction on a post or comment idempotently (creates if not existi
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`toggleLike`](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts) in [src/modules/community/actions.ts](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts).
-  - Prisma Model: [`Like`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L184-L198).
+  - Corresponding Server Action: [`toggleLike`](../src/modules/community/actions.ts) in [src/modules/community/actions.ts](../src/modules/community/actions.ts).
+  - Validation Schema: `toggleLikeSchema` in [src/modules/community/schemas.ts](../src/modules/community/schemas.ts).
+  - Prisma Model: [`Like`](../prisma/schema.prisma).
 
 ---
 
@@ -1200,7 +1227,7 @@ Publishes an educational clinical guide or medical knowledge article. Restricted
     | :--- | :--- | :--- | :--- | :--- |
     | `title` | `string` | No | Min 10, max 200 characters | Article headline |
     | `content` | `string` | No | Min 100, max 50000 characters | Markdown or HTML body |
-    | `tags` | `array<string>`| No | Array of 1-10 tags, each 2-30 characters | Topical classification |
+    | `tags` | `array<string>`| No | Array of 1-10 tags, each 2-30 characters; trimmed, lowercased and de-duplicated | Topical classification |
     | `isPublic` | `boolean` | No | Default `true` | Public visibility flag |
 
 ##### Request Body Example
@@ -1276,8 +1303,9 @@ Publishes an educational clinical guide or medical knowledge article. Restricted
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`createBlogEntry`](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts) in [src/modules/community/actions.ts](file:///home/ttrotta/orca/witp/src/modules/community/actions.ts).
-  - Prisma Models: [`BlogEntry`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L200-L212), [`Tag`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L223-L228), [`BlogEntryTag`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L214-L221).
+  - Corresponding Server Action: [`createBlogEntry`](../src/modules/community/actions.ts) in [src/modules/community/actions.ts](../src/modules/community/actions.ts).
+  - Validation Schema: `createBlogEntrySchema` in [src/modules/community/schemas.ts](../src/modules/community/schemas.ts).
+  - Prisma Models: [`BlogEntry`](../prisma/schema.prisma), [`Tag`](../prisma/schema.prisma), [`BlogEntryTag`](../prisma/schema.prisma).
 
 ---
 
@@ -1361,8 +1389,9 @@ Fetches a user's public profile, follower statistics, and public contributions b
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`getUserProfile`](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts) in [src/modules/user-profile/actions.ts](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts).
-  - Prisma Models: [`User`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L28-L53), [`UserProfile`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L55-L64).
+  - Corresponding Server Action: [`getUserProfile`](../src/modules/user-profile/actions.ts) in [src/modules/user-profile/actions.ts](../src/modules/user-profile/actions.ts).
+  - Validation Schema: `usernameSchema` in [src/modules/user-profile/schemas.ts](../src/modules/user-profile/schemas.ts).
+  - Prisma Models: [`User`](../prisma/schema.prisma), [`UserProfile`](../prisma/schema.prisma).
 
 ---
 
@@ -1448,9 +1477,9 @@ Updates bio text, location, website, or birthdate in the authenticated user's pr
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`updateUserProfile`](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts) in [src/modules/user-profile/actions.ts](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts).
-  - Validation Schema: `updateProfileSchema` in [src/modules/user-profile/schemas.ts](file:///home/ttrotta/orca/witp/src/modules/user-profile/schemas.ts).
-  - Prisma Model: [`UserProfile`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L55-L64).
+  - Corresponding Server Action: [`updateUserProfile`](../src/modules/user-profile/actions.ts) in [src/modules/user-profile/actions.ts](../src/modules/user-profile/actions.ts).
+  - Validation Schema: `updateProfileSchema` in [src/modules/user-profile/schemas.ts](../src/modules/user-profile/schemas.ts).
+  - Prisma Model: [`UserProfile`](../prisma/schema.prisma).
 
 ---
 
@@ -1468,8 +1497,8 @@ Updates the authenticated user's UI theme, language locale, and country preferen
   - **Request Body JSON Schema**:
     | Field | Type | Nullable | Constraints | Description |
     | :--- | :--- | :--- | :--- | :--- |
-    | `theme` | `string` | No | Enum: `"system"`, `"light"`, `"dark"` | UI color scheme |
-    | `language` | `string` | No | Enum: `"es"`, `"en"` | Application locale dictionary |
+    | `theme` | `string` | No | Optional. Enum: `"system"`, `"light"`, `"dark"` | UI color scheme |
+    | `language` | `string` | No | Optional. Enum: `"es"`, `"en"` | Application locale dictionary |
     | `country` | `string` | Yes | ISO 3166-1 alpha-2 code (e.g. `"US"`, `"ES"`), max 2 chars | Region code |
 
 ##### Request Body Example
@@ -1533,9 +1562,9 @@ Updates the authenticated user's UI theme, language locale, and country preferen
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`updateUserSettings`](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts) in [src/modules/user-profile/actions.ts](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts).
-  - Validation Schema: `updateSettingsSchema` in [src/modules/user-profile/schemas.ts](file:///home/ttrotta/orca/witp/src/modules/user-profile/schemas.ts).
-  - Prisma Model: [`UserSettings`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L76-L84).
+  - Corresponding Server Action: [`updateUserSettings`](../src/modules/user-profile/actions.ts) in [src/modules/user-profile/actions.ts](../src/modules/user-profile/actions.ts).
+  - Validation Schema: `updateSettingsSchema` in [src/modules/user-profile/schemas.ts](../src/modules/user-profile/schemas.ts).
+  - Prisma Model: [`UserSettings`](../prisma/schema.prisma).
 
 ---
 
@@ -1628,8 +1657,9 @@ Toggles following relationship with another user (connects or disconnects in the
 ```
 
 - **Mapping to Code**:
-  - Corresponding Server Action: [`toggleFollowUser`](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts) in [src/modules/user-profile/actions.ts](file:///home/ttrotta/orca/witp/src/modules/user-profile/actions.ts).
-  - Prisma Model: [`Follows`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L86-L96).
+  - Corresponding Server Action: [`toggleFollowUser`](../src/modules/user-profile/actions.ts) in [src/modules/user-profile/actions.ts](../src/modules/user-profile/actions.ts).
+  - Validation Schema: `followUserSchema` in [src/modules/user-profile/schemas.ts](../src/modules/user-profile/schemas.ts).
+  - Prisma Model: [`Follows`](../prisma/schema.prisma).
 
 ---
 
@@ -1738,9 +1768,9 @@ Triggers the autonomous `PainAnalystAgent` to ingest chronological pain records,
 ```
 
 - **Mapping to Code**:
-  - Corresponding Agent Pipeline: [`PainAnalystAgent.run`](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/ai/PainAnalystAgent.ts) in [src/modules/pain-tracking/ai/PainAnalystAgent.ts](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/ai/PainAnalystAgent.ts).
-  - Agent Tools: [src/modules/pain-tracking/ai/tools.ts](file:///home/ttrotta/orca/witp/src/modules/pain-tracking/ai/tools.ts).
-  - Prisma Models: [`PainRecord`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L128-L142), [`Condition`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L109-L117), [`ConditionBodyPart`](file:///home/ttrotta/orca/witp/prisma/schema.prisma#L119-L126).
+  - Corresponding Agent Pipeline: [`PainAnalystAgent.run`](../src/modules/pain-tracking/ai/PainAnalystAgent.ts) in [src/modules/pain-tracking/ai/PainAnalystAgent.ts](../src/modules/pain-tracking/ai/PainAnalystAgent.ts).
+  - Agent Tools: [src/modules/pain-tracking/ai/tools.ts](../src/modules/pain-tracking/ai/tools.ts).
+  - Prisma Models: [`PainRecord`](../prisma/schema.prisma), [`Condition`](../prisma/schema.prisma), [`ConditionBodyPart`](../prisma/schema.prisma).
 
 ---
 
@@ -1849,7 +1879,7 @@ Automated safety evaluation for post and comment submissions to detect medical m
 ```
 
 - **Mapping to Code**:
-  - Corresponding Agent Pipeline: [`ModerationAgent.scan`](file:///home/ttrotta/orca/witp/src/modules/community/ai/ModerationAgent.ts) in [src/modules/community/ai/ModerationAgent.ts](file:///home/ttrotta/orca/witp/src/modules/community/ai/ModerationAgent.ts).
+  - Corresponding Agent Pipeline: [`ModerationAgent.scan`](../src/modules/community/ai/ModerationAgent.ts) in [src/modules/community/ai/ModerationAgent.ts](../src/modules/community/ai/ModerationAgent.ts).
 
 ---
 
@@ -1962,8 +1992,8 @@ Standardized Model Context Protocol (MCP) JSON-RPC 2.0 gateway allowing authenti
 ```
 
 - **Mapping to Code**:
-  - Corresponding Protocol & Server: [`server.ts`](file:///home/ttrotta/orca/witp/src/ai/mcp/server.ts) in [src/ai/mcp/server.ts](file:///home/ttrotta/orca/witp/src/ai/mcp/server.ts) and [`protocol.ts`](file:///home/ttrotta/orca/witp/src/ai/mcp/protocol.ts) in [src/ai/mcp/protocol.ts](file:///home/ttrotta/orca/witp/src/ai/mcp/protocol.ts).
-  - Canonical Anatomy: [`bodyParts`](file:///home/ttrotta/orca/witp/src/shared/anatomy.ts#L2-L35) in [src/shared/anatomy.ts](file:///home/ttrotta/orca/witp/src/shared/anatomy.ts).
+  - Corresponding Protocol & Server: [`server.ts`](../src/ai/mcp/server.ts) in [src/ai/mcp/server.ts](../src/ai/mcp/server.ts) and [`protocol.ts`](../src/ai/mcp/protocol.ts) in [src/ai/mcp/protocol.ts](../src/ai/mcp/protocol.ts).
+  - Canonical Anatomy: [`bodyParts`](../src/shared/anatomy.ts) in [src/shared/anatomy.ts](../src/shared/anatomy.ts).
 
 ---
 
@@ -2014,7 +2044,7 @@ export function PainLogButton({ meshId }: { meshId: string }) {
 
 ### Calling via Standard REST Fetch
 
-External clients, mobile applications, and integration test runners can communicate directly with the REST endpoints using standard HTTP requests:
+Once the REST routes exist, external clients, mobile applications, and integration test runners will communicate with them using standard HTTP requests:
 
 ```typescript
 // Example: Creating a pain record via standard REST fetch
