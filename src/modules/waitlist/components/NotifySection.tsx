@@ -1,65 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState, useTransition } from "react";
+import { ArrowRight } from "lucide-react";
 import { useTranslation } from "@/infrastructure/i18n";
 import { subscribeToWaitlist } from "../actions";
 
 export function NotifySection() {
   const { t } = useTranslation("common");
+  const id = useId();
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
-  const [errorMessage, setErrorMessage] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState<keyof typeof t.notifyMe.errors | null>(
+    null,
+  );
+  const [pending, startTransition] = useTransition();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus("loading");
-    setErrorMessage("");
-
-    const result = await subscribeToWaitlist({ email });
-
-    if (result.success) {
-      setStatus("success");
-      setEmail("");
-    } else {
-      setStatus("error");
-      setErrorMessage(result.error || t.notifyMe.error);
-    }
-  };
-
-  if (status === "success") {
+  if (saved) {
     return (
-      <div className="text-center">
-        <p className="text-xl text-green-500">{t.notifyMe.success}</p>
-      </div>
+      <p role="status" className="text-accent text-sm">
+        {t.notifyMe.success}
+      </p>
     );
   }
 
   return (
-    <div className="flex flex-col items-center gap-4">
-      <h2 className="text-3xl font-bold text-white">{t.notifyMe.title}</h2>
-      <p className="text-gray-400">{t.notifyMe.description}</p>
-      <form onSubmit={handleSubmit} className="flex gap-2">
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder={t.notifyMe.placeholder}
-          required
-          className="rounded-lg border border-gray-700 bg-gray-800 px-4 py-2 text-white focus:border-blue-500 focus:outline-none"
-        />
-        <button
-          type="submit"
-          disabled={status === "loading"}
-          className="rounded-lg bg-blue-600 px-6 py-2 font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {status === "loading" ? "..." : t.notifyMe.button}
-        </button>
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-2xl font-medium tracking-tight">
+          {t.notifyMe.title}
+        </h2>
+        <p className="text-muted mt-2 text-sm leading-relaxed">
+          {t.notifyMe.description}
+        </p>
+      </div>
+      <form
+        className="space-y-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setError(null);
+          startTransition(async () => {
+            try {
+              const result = await subscribeToWaitlist({ email });
+              if (result.success) {
+                setSaved(true);
+                setEmail("");
+              } else setError(result.error);
+            } catch {
+              setError("connection");
+            }
+          });
+        }}
+      >
+        <fieldset disabled={pending} className="space-y-3">
+          <div>
+            <label htmlFor={`${id}-email`} className="field-label">
+              {t.notifyMe.label}
+            </label>
+            <input
+              id={`${id}-email`}
+              type="email"
+              autoComplete="email"
+              maxLength={254}
+              required
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              placeholder={t.notifyMe.placeholder}
+              className="field"
+            />
+          </div>
+          <button type="submit" className="primary-button w-full">
+            {pending ? t.loading : t.notifyMe.button}
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </button>
+        </fieldset>
+        {error && (
+          <p role="alert" className="text-error text-sm">
+            {t.notifyMe.errors[error]}
+          </p>
+        )}
       </form>
-      {status === "error" && (
-        <p className="text-sm text-red-500">{errorMessage}</p>
-      )}
     </div>
   );
 }

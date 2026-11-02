@@ -14,7 +14,7 @@ When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 
 | Action                                              | Skill                         |
 | --------------------------------------------------- | ----------------------------- |
-| Creating or modifying files in `src/ui/`            | `vercel-react-best-practices` |
+| Creating or modifying files in `src/app/`           | `vercel-react-best-practices` |
 | Writing React 19 components (.tsx)                  | `react-19`                    |
 | Creating UI components or styling with Tailwind CSS | `tailwind-design-system`      |
 | Working with Zustand state management               | `zustand-5`                   |

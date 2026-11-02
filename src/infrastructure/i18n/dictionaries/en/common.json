@@ -8,9 +8,15 @@
   "notifyMe": {
     "title": "Coming Soon",
     "description": "Be the first to know when we launch",
+    "label": "Email",
     "placeholder": "Enter your email",
     "button": "Notify Me",
     "success": "You're on the list!",
-    "error": "Something went wrong"
+    "errors": {
+      "invalid": "Enter a valid email address.",
+      "duplicate": "This email is already on the list.",
+      "rateLimited": "Too many attempts. Try again in 10 minutes.",
+      "connection": "We couldn’t connect. Please try again."
+    }
   }
 }

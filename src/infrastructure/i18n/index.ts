@@ -1,4 +1,4 @@
-export { proxy, config } from "./proxy";
+export { proxy } from "./proxy";
 export {
   getDictionary,
   hasLocale,

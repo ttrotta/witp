@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: corepack enable
+      - run: pnpm install --frozen-lockfile
+      - name: Reject AI attribution in commit messages
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          pattern='^(co-authored-by:.*(claude|anthropic|chatgpt|openai|copilot|cursor|gemini)|assisted-by:|.*generated (with|by) .*(claude|chatgpt|copilot|cursor|gemini))'
+          if git log --format=%B "$BASE_SHA..$HEAD_SHA" | grep -Eiq "$pattern"; then
+            echo "::error::Commit messages must not contain AI attribution (docs/GIT_WORKFLOW.md)."
+            exit 1
+          fi
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm test
+      - run: pnpm build

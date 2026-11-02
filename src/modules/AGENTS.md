@@ -17,3 +17,12 @@ When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 | Importing across layers | `screaming-architecture` |
 
 ---
+
+## CRITICAL RULES - NON-NEGOTIABLE
+
+### Documentation Synchronization
+
+- Any modification or addition to Server Actions (`actions.ts`), Zod schemas (`schemas.ts`), security guards, or response contracts MUST be immediately updated in `docs/API.md`.
+- Any database schema dependency changes MUST be updated in `docs/database/SCHEMA.md`.
+
+---

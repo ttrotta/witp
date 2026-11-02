@@ -25,4 +25,8 @@ When performing these actions, ALWAYS invoke the corresponding skill FIRST:
 - Use Prisma with generated client
 - NEVER write raw SQL unless absolutely necessary
 
+### Documentation Synchronization
+
+- Any database schema change, migration, seed update, or Prisma configuration modification MUST be immediately reflected in `docs/database/SCHEMA.md`.
+
 ---
